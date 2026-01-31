@@ -563,6 +563,9 @@
                 setTimeout(notifyParentReady, 2000);
             }
             
+            // Store table info received from parent
+            var tableInfo = null;
+            
             // Parent window communication
             window.addEventListener('message', function(event) {
                 var data = event.data;
@@ -576,7 +579,58 @@
                     SUPABASE_URL = data.data.url;
                     SUPABASE_KEY = data.data.key;
                 }
+                if (data && data.type === 'TABLE_INFO') {
+                    tableInfo = data.data;
+                    console.log('[Game] Received table info:', tableInfo);
+                    
+                    // Update player name from parent
+                    if (tableInfo.username) {
+                        document.getElementById('player-name').value = tableInfo.username;
+                    }
+                    
+                    // If we have table info, auto-join the room
+                    if (tableInfo.tableId && multiplayerManager === null) {
+                        autoJoinTable(tableInfo);
+                    }
+                }
             });
+            
+            // Auto-join a table from parent window
+            function autoJoinTable(info) {
+                var playerName = info.username || getPlayerName();
+                
+                multiplayerManager = new CMultiplayerManager({
+                    playerName: playerName,
+                    supabaseUrl: SUPABASE_URL,
+                    supabaseKey: SUPABASE_KEY
+                });
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_CONNECTED, function(data) {
+                    console.log('[Game] Connected to table:', data.tableId);
+                    showWaitingRoom();
+                    document.getElementById('room-code').textContent = info.tableId.substring(0, 8).toUpperCase();
+                }, this);
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_GAME_STATE_CHANGED, function(state) {
+                    updatePlayersList();
+                    
+                    if (state.phase === multiplayerManager.PHASE_BETTING && !gameStarted) {
+                        startMultiplayerGameAsClient();
+                    }
+                }, this);
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_ERROR, function(data) {
+                    alert(data.message || 'Failed to join table');
+                    showMainMenu();
+                }, this);
+                
+                // Use table ID as room code
+                multiplayerManager.joinTable(info.tableId, function(success) {
+                    if (!success) {
+                        console.error('[Game] Failed to join table');
+                    }
+                });
+            }
             
             function notifyParentReady() {
                 if (window.parent !== window) {
