@@ -169,7 +169,7 @@ function sizeHandler() {
 	var bInIframe = (window.self !== window.top);
 	
 	if (bInIframe) {
-		// In iframe - use parent window size or document size
+		// In iframe - use available space
 		try {
 			h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 			w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
@@ -184,26 +184,46 @@ function sizeHandler() {
 		h = getSize("Height");
 		w = getSize("Width");
 	}
+	
+	// Mobile viewport fix - use visual viewport if available
+	if (window.visualViewport) {
+		w = window.visualViewport.width;
+		h = window.visualViewport.height;
+	}
         
         if(s_bFocus){
             _checkOrientation(w,h);
         }
-        
-	var multiplier = Math.min((h / CANVAS_HEIGHT), (w / CANVAS_WIDTH));
+	
+	// For mobile in portrait mode, scale to fit width and allow scrolling/overflow
+	var bPortrait = (h > w);
+	var bMobileDevice = isMobile();
+	
+	var multiplier;
+	if (bMobileDevice && bPortrait) {
+		// On mobile portrait: fit to width, game will be taller
+		multiplier = w / CANVAS_WIDTH;
+	} else {
+		// Normal: fit to smallest dimension
+		multiplier = Math.min((h / CANVAS_HEIGHT), (w / CANVAS_WIDTH));
+	}
 
 	var destW = Math.round(CANVAS_WIDTH * multiplier);
 	var destH = Math.round(CANVAS_HEIGHT * multiplier);
         
-        var iAdd = 0;
-        if (destH < h){
-            iAdd = h-destH;
-            destH += iAdd;
-            destW += iAdd*(CANVAS_WIDTH/CANVAS_HEIGHT);
-        }else  if (destW < w){
-            iAdd = w-destW;
-            destW += iAdd;
-            destH += iAdd*(CANVAS_HEIGHT/CANVAS_WIDTH);
-        }
+	// Only expand to fill if not on mobile portrait
+	if (!bMobileDevice || !bPortrait) {
+		var iAdd = 0;
+		if (destH < h){
+		    iAdd = h-destH;
+		    destH += iAdd;
+		    destW += iAdd*(CANVAS_WIDTH/CANVAS_HEIGHT);
+		}else if (destW < w){
+		    iAdd = w-destW;
+		    destW += iAdd;
+		    destH += iAdd*(CANVAS_HEIGHT/CANVAS_WIDTH);
+		}
+	}
 
         var fOffsetY = ((h / 2) - (destH / 2));
         var fOffsetX = ((w / 2) - (destW / 2));
@@ -249,6 +269,14 @@ function sizeHandler() {
             s_iScaleFactor= iScale*2;  
             s_oStage.scaleX = s_oStage.scaleY = iScale*2;  
         }else if(s_bMobile){
+            var canvas = document.getElementById('canvas');
+            // On mobile, set the actual canvas dimensions too
+            if (s_oStage) {
+                s_oStage.canvas.width = destW;
+                s_oStage.canvas.height = destH;
+                s_iScaleFactor = Math.min(destW / CANVAS_WIDTH, destH / CANVAS_HEIGHT);
+                s_oStage.scaleX = s_oStage.scaleY = s_iScaleFactor;
+            }
             $("#canvas").css("width",destW+"px");
             $("#canvas").css("height",destH+"px");
         }else if(s_oStage){
@@ -259,15 +287,12 @@ function sizeHandler() {
             s_oStage.scaleX = s_oStage.scaleY = s_iScaleFactor; 
         }
         
-        if(fOffsetY < 0){
-            $("#canvas").css("top",fOffsetY+"px");
-        }else{
-            // centered game
-            fOffsetY = (h - destH)/2;
-            $("#canvas").css("top",fOffsetY+"px");
-        }
+        // Center the canvas
+        fOffsetY = Math.max(0, (h - destH) / 2);
+        fOffsetX = Math.max(0, (w - destW) / 2);
         
-        $("#canvas").css("left",fOffsetX+"px");
+        $("#canvas").css("top", fOffsetY + "px");
+        $("#canvas").css("left", fOffsetX + "px");
         
         fullscreenHandler();
 };
