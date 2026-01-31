@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>BLACKJACK MULTIPLAYER</title>
+        <link rel="stylesheet" href="css/reset.css" type="text/css">
+        <link rel="stylesheet" href="css/main.css" type="text/css">
+        <link rel="stylesheet" href="css/orientation_utils.css" type="text/css">
+        <link rel="stylesheet" href="css/ios_fullscreen.css" type="text/css">
+        <link rel='shortcut icon' type='image/x-icon' href='./favicon.ico' />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0,minimal-ui" />
+        <meta name="msapplication-tap-highlight" content="no"/>
+
+        <!-- Supabase -->
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+        <!-- Game libraries -->
+        <script type="text/javascript" src="js/jquery-3.2.1.min.js"></script>
+        <script type="text/javascript" src="js/createjs-2015.11.26.min.js"></script>
+        <script type="text/javascript" src="js/platform.js"></script>
+        <script type="text/javascript" src="js/ios_fullscreen.js"></script>
+        <script type="text/javascript" src="js/howler.min.js"></script>
+        <script type="text/javascript" src="js/screenfull.js"></script>
+        <script type="text/javascript" src="js/ctl_utils.js"></script>
+        <script type="text/javascript" src="js/sprite_lib.js"></script>
+        <script type="text/javascript" src="js/settings.js"></script>
+        <script type="text/javascript" src="js/CLang.min.js"></script>
+        <script type="text/javascript" src="js/CPreloader.js"></script>
+        <script type="text/javascript" src="js/CMain.js"></script>
+        <script type="text/javascript" src="js/CTextButton.js"></script>
+        <script type="text/javascript" src="js/CGfxButton.js"></script>
+        <script type="text/javascript" src="js/CToggle.js"></script>
+        <script type="text/javascript" src="js/CInterface.js"></script>
+        <script type="text/javascript" src="js/CTweenController.js"></script>
+        <script type="text/javascript" src="js/CFichesController.js"></script>
+        <script type="text/javascript" src="js/CVector2.js"></script>
+        <script type="text/javascript" src="js/CGameSettings.js"></script>
+        <script type="text/javascript" src="js/CEasing.js"></script>
+        <script type="text/javascript" src="js/CHandController.js"></script>
+        <script type="text/javascript" src="js/CCard.js"></script>
+        <script type="text/javascript" src="js/CInsurancePanel.js"></script>
+        <script type="text/javascript" src="js/CGameOver.js"></script>
+        <script type="text/javascript" src="js/CMsgBox.js"></script>
+        <script type="text/javascript" src="js/CCreditsPanel.js"></script>
+        <script type="text/javascript" src="js/CFiche.js"></script>
+        <script type="text/javascript" src="js/CCTLText.js"></script>
+        
+        <!-- Multiplayer components -->
+        <script type="text/javascript" src="js/CMultiplayerManager.js"></script>
+        <script type="text/javascript" src="js/CSeatMultiplayer.js"></script>
+        <script type="text/javascript" src="js/CGameMultiplayer.js"></script>
+        <script type="text/javascript" src="js/CGame.js"></script>
+        <script type="text/javascript" src="js/CSeat.js"></script>
+        <script type="text/javascript" src="js/CMenu.js"></script>
+        
+        <style>
+            #lobby-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, #1a4d1a 0%, #0d260d 100%);
+                z-index: 1000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-family: Arial, sans-serif;
+            }
+            
+            .lobby-container {
+                background: rgba(0, 0, 0, 0.6);
+                border-radius: 20px;
+                padding: 40px;
+                text-align: center;
+                color: white;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+                min-width: 400px;
+            }
+            
+            .lobby-title {
+                font-size: 48px;
+                margin-bottom: 10px;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            
+            .lobby-subtitle {
+                font-size: 18px;
+                color: #aaa;
+                margin-bottom: 30px;
+            }
+            
+            .lobby-btn {
+                display: block;
+                width: 100%;
+                padding: 15px 30px;
+                margin: 10px 0;
+                font-size: 20px;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            
+            .btn-single {
+                background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+                color: white;
+            }
+            
+            .btn-multi {
+                background: linear-gradient(135deg, #2196F3 0%, #1565C0 100%);
+                color: white;
+            }
+            
+            .btn-join {
+                background: linear-gradient(135deg, #FF9800 0%, #E65100 100%);
+                color: white;
+            }
+            
+            .lobby-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            }
+            
+            .input-group {
+                margin: 20px 0;
+            }
+            
+            .input-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-size: 14px;
+                color: #ccc;
+            }
+            
+            .input-group input {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+                border: 2px solid #555;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                box-sizing: border-box;
+            }
+            
+            .input-group input:focus {
+                outline: none;
+                border-color: #4CAF50;
+            }
+            
+            .player-count {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin: 20px 0;
+            }
+            
+            .player-count button {
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+                border: 2px solid #555;
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            
+            .player-count button:hover,
+            .player-count button.selected {
+                background: #4CAF50;
+                border-color: #4CAF50;
+            }
+            
+            .back-btn {
+                margin-top: 20px;
+                padding: 10px 20px;
+                background: transparent;
+                border: 1px solid #666;
+                color: #aaa;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+            
+            .back-btn:hover {
+                border-color: #aaa;
+                color: white;
+            }
+            
+            #room-code {
+                font-size: 32px;
+                font-weight: bold;
+                color: #FFD700;
+                letter-spacing: 5px;
+                margin: 20px 0;
+            }
+            
+            .waiting-text {
+                animation: pulse 1.5s infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+            
+            .hidden {
+                display: none !important;
+            }
+        </style>
+    </head>
+    <body ondragstart="return false;" ondrop="return false;">
+        <div style="position: fixed; background-color: transparent; top: 0px; left: 0px; width: 100%; height: 100%"></div>
+        
+        <!-- Lobby Overlay -->
+        <div id="lobby-overlay">
+            <!-- Main Menu -->
+            <div id="lobby-main" class="lobby-container">
+                <h1 class="lobby-title">♠ BLACKJACK ♣</h1>
+                <p class="lobby-subtitle">Classic Casino Game</p>
+                
+                <div class="input-group">
+                    <label>Your Name</label>
+                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
+                </div>
+                
+                <button class="lobby-btn btn-single" onclick="startSinglePlayer()">
+                    🎮 Single Player
+                </button>
+                <button class="lobby-btn btn-multi" onclick="showCreateRoom()">
+                    🌐 Create Room
+                </button>
+                <button class="lobby-btn btn-join" onclick="showJoinRoom()">
+                    🚪 Join Room
+                </button>
+            </div>
+            
+            <!-- Create Room Screen -->
+            <div id="lobby-create" class="lobby-container hidden">
+                <h1 class="lobby-title">Create Room</h1>
+                
+                <div class="input-group">
+                    <label>Number of Players</label>
+                </div>
+                <div class="player-count">
+                    <button onclick="selectPlayers(2)" id="p2">2</button>
+                    <button onclick="selectPlayers(3)" id="p3" class="selected">3</button>
+                    <button onclick="selectPlayers(4)" id="p4">4</button>
+                    <button onclick="selectPlayers(5)" id="p5">5</button>
+                </div>
+                
+                <button class="lobby-btn btn-multi" onclick="createRoom()">
+                    Create Room
+                </button>
+                <button class="back-btn" onclick="showMainMenu()">← Back</button>
+            </div>
+            
+            <!-- Waiting Room Screen -->
+            <div id="lobby-waiting" class="lobby-container hidden">
+                <h1 class="lobby-title">Room Created!</h1>
+                <p>Share this code with friends:</p>
+                <div id="room-code">------</div>
+                
+                <div id="players-list">
+                    <p class="waiting-text">Waiting for players...</p>
+                </div>
+                
+                <button class="lobby-btn btn-multi" id="start-game-btn" onclick="startMultiplayerGame()" style="display:none">
+                    Start Game
+                </button>
+                <button class="back-btn" onclick="leaveRoom()">Leave Room</button>
+            </div>
+            
+            <!-- Join Room Screen -->
+            <div id="lobby-join" class="lobby-container hidden">
+                <h1 class="lobby-title">Join Room</h1>
+                
+                <div class="input-group">
+                    <label>Room Code</label>
+                    <input type="text" id="room-code-input" placeholder="Enter 6-digit code" maxlength="6" style="text-transform: uppercase; text-align: center; font-size: 24px; letter-spacing: 5px;">
+                </div>
+                
+                <button class="lobby-btn btn-join" onclick="joinRoom()">
+                    Join Room
+                </button>
+                <button class="back-btn" onclick="showMainMenu()">← Back</button>
+            </div>
+        </div>
+        
+        <script>
+            // Supabase configuration
+            var SUPABASE_URL = 'https://lquazxoxvrntoocuvdsa.supabase.co';
+            var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxdWF6eG94dnJudG9vY3V2ZHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MDA2MTYsImV4cCI6MjA4NTI3NjYxNn0.ra6DCFTVUuP2jOVaL94_6ku_eJPW8pPdba5QFaSjmNM';
+            
+            var multiplayerManager = null;
+            var selectedPlayers = 3;
+            var gameStarted = false;
+            var parentOrigin = '*';
+            var lastSavedScore = 0;
+            
+            // Check URL params for room code
+            function checkUrlParams() {
+                var params = new URLSearchParams(window.location.search);
+                var roomCode = params.get('room');
+                if (roomCode) {
+                    document.getElementById('room-code-input').value = roomCode.toUpperCase();
+                    showJoinRoom();
+                }
+            }
+            
+            // UI Navigation
+            function showMainMenu() {
+                hideAllScreens();
+                document.getElementById('lobby-main').classList.remove('hidden');
+            }
+            
+            function showCreateRoom() {
+                hideAllScreens();
+                document.getElementById('lobby-create').classList.remove('hidden');
+            }
+            
+            function showJoinRoom() {
+                hideAllScreens();
+                document.getElementById('lobby-join').classList.remove('hidden');
+            }
+            
+            function showWaitingRoom() {
+                hideAllScreens();
+                document.getElementById('lobby-waiting').classList.remove('hidden');
+            }
+            
+            function hideAllScreens() {
+                document.querySelectorAll('.lobby-container').forEach(function(el) {
+                    el.classList.add('hidden');
+                });
+            }
+            
+            function selectPlayers(num) {
+                selectedPlayers = num;
+                document.querySelectorAll('.player-count button').forEach(function(btn) {
+                    btn.classList.remove('selected');
+                });
+                document.getElementById('p' + num).classList.add('selected');
+            }
+            
+            function getPlayerName() {
+                var name = document.getElementById('player-name').value.trim();
+                if (!name) {
+                    name = 'Player_' + Math.random().toString(36).substr(2, 4);
+                    document.getElementById('player-name').value = name;
+                }
+                return name;
+            }
+            
+            // Game Modes
+            function startSinglePlayer() {
+                document.getElementById('lobby-overlay').classList.add('hidden');
+                initGame(false, 1);
+            }
+            
+            function createRoom() {
+                var playerName = getPlayerName();
+                
+                multiplayerManager = new CMultiplayerManager({
+                    playerName: playerName,
+                    supabaseUrl: SUPABASE_URL,
+                    supabaseKey: SUPABASE_KEY
+                });
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_CONNECTED, function(data) {
+                    document.getElementById('room-code').textContent = data.tableId.toUpperCase();
+                    showWaitingRoom();
+                    updatePlayersList();
+                }, this);
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_PLAYER_JOINED, function(player) {
+                    updatePlayersList();
+                    checkCanStart();
+                }, this);
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_PLAYER_LEFT, function(player) {
+                    updatePlayersList();
+                    checkCanStart();
+                }, this);
+                
+                multiplayerManager.createTable(null, selectedPlayers, function(success, tableId) {
+                    if (!success) {
+                        alert('Failed to create room. Please try again.');
+                        showMainMenu();
+                    }
+                });
+            }
+            
+            function joinRoom() {
+                var roomCode = document.getElementById('room-code-input').value.trim().toLowerCase();
+                if (!roomCode || roomCode.length < 4) {
+                    alert('Please enter a valid room code');
+                    return;
+                }
+                
+                var playerName = getPlayerName();
+                
+                multiplayerManager = new CMultiplayerManager({
+                    playerName: playerName,
+                    supabaseUrl: SUPABASE_URL,
+                    supabaseKey: SUPABASE_KEY
+                });
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_CONNECTED, function(data) {
+                    showWaitingRoom();
+                    document.getElementById('room-code').textContent = roomCode.toUpperCase();
+                }, this);
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_GAME_STATE_CHANGED, function(state) {
+                    updatePlayersList();
+                    
+                    if (state.phase === multiplayerManager.PHASE_BETTING && !gameStarted) {
+                        startMultiplayerGameAsClient();
+                    }
+                }, this);
+                
+                multiplayerManager.addEventListener(multiplayerManager.EVENT_ERROR, function(data) {
+                    alert(data.message || 'Failed to join room');
+                    showMainMenu();
+                }, this);
+                
+                multiplayerManager.joinTable(roomCode, function(success) {
+                    if (!success) {
+                        alert('Failed to join room. Check the code and try again.');
+                        showMainMenu();
+                    }
+                });
+            }
+            
+            function leaveRoom() {
+                if (multiplayerManager) {
+                    multiplayerManager.disconnect();
+                    multiplayerManager = null;
+                }
+                showMainMenu();
+            }
+            
+            function updatePlayersList() {
+                if (!multiplayerManager) return;
+                
+                var players = multiplayerManager.getPlayers();
+                var html = '<p>Players (' + players.length + '/' + (multiplayerManager.getGameState().maxPlayers || selectedPlayers) + '):</p><ul>';
+                
+                for (var i = 0; i < players.length; i++) {
+                    var isHost = players[i].id === multiplayerManager.getGameState().hostId;
+                    html += '<li style="color: #fff; margin: 5px 0;">' + 
+                            players[i].name + 
+                            (isHost ? ' 👑' : '') +
+                            '</li>';
+                }
+                
+                html += '</ul>';
+                
+                if (players.length < 2) {
+                    html += '<p class="waiting-text">Waiting for more players...</p>';
+                }
+                
+                document.getElementById('players-list').innerHTML = html;
+            }
+            
+            function checkCanStart() {
+                if (!multiplayerManager || !multiplayerManager.isHost()) return;
+                
+                var players = multiplayerManager.getPlayers();
+                var startBtn = document.getElementById('start-game-btn');
+                
+                if (players.length >= 2) {
+                    startBtn.style.display = 'block';
+                } else {
+                    startBtn.style.display = 'none';
+                }
+            }
+            
+            function startMultiplayerGame() {
+                if (!multiplayerManager || !multiplayerManager.isHost()) return;
+                
+                gameStarted = true;
+                document.getElementById('lobby-overlay').classList.add('hidden');
+                
+                var numPlayers = multiplayerManager.getPlayers().length;
+                initGame(true, numPlayers);
+            }
+            
+            function startMultiplayerGameAsClient() {
+                gameStarted = true;
+                document.getElementById('lobby-overlay').classList.add('hidden');
+                
+                var numPlayers = multiplayerManager.getPlayers().length;
+                initGame(true, numPlayers);
+            }
+            
+            // Initialize Game
+            function initGame(bMultiplayer, iNumPlayers) {
+                var oMain = new CMain({
+                    win_occurrence: 40,
+                    min_bet: 1,
+                    max_bet: 300,
+                    bet_time: 15000,
+                    money: 1000,
+                    blackjack_payout: 1.5,
+                    game_cash: 10000,
+                    show_credits: true,
+                    fullscreen: false,
+                    check_orientation: false,
+                    audio_enable_on_startup: false,
+                    ad_show_counter: 999,
+                    // Multiplayer options
+                    multiplayer: bMultiplayer,
+                    num_seats: iNumPlayers
+                });
+
+                $(oMain).on("recharge", function(evt) {
+                    requestRechargeFromParent();
+                });
+                
+                $(oMain).on("bet_placed", function(evt, iTotBet) {
+                    if (typeof s_oGame !== 'undefined' && s_oGame !== null) {
+                        sendScoreToParent(s_oGame.getMoney());
+                    }
+                });
+            
+                $(oMain).on("start_session", function(evt) {
+                    // Connect multiplayer manager to game
+                    if (bMultiplayer && multiplayerManager && typeof s_oGame !== 'undefined') {
+                        s_oGame.setMultiplayerManager(multiplayerManager);
+                    }
+                    notifyParentReady();
+                });
+
+                $(oMain).on("end_session", function(evt) {
+                    if (typeof s_oGame !== 'undefined' && s_oGame !== null) {
+                        sendScoreToParent(s_oGame.getMoney());
+                    }
+                });
+
+                $(oMain).on("save_score", function(evt, iScore) {
+                    sendScoreToParent(iScore);
+                });
+
+                $(oMain).on("show_interlevel_ad", function(evt) {
+                    // No ads
+                });
+
+                $(oMain).on("share_event", function(evt, iScore) {
+                    sendScoreToParent(iScore);
+                });
+                
+                if (isIOS()) {
+                    setTimeout(function() {
+                        sizeHandler();
+                    }, 200);
+                } else {
+                    sizeHandler();
+                }
+                
+                setTimeout(notifyParentReady, 2000);
+            }
+            
+            // Parent window communication
+            window.addEventListener('message', function(event) {
+                var data = event.data;
+                if (data && data.type === 'SET_CREDITS') {
+                    if (typeof s_oGame !== 'undefined' && s_oGame !== null) {
+                        s_oGame.setMoney(data.data.credits);
+                        lastSavedScore = data.data.credits;
+                    }
+                }
+                if (data && data.type === 'SUPABASE_CONFIG') {
+                    SUPABASE_URL = data.data.url;
+                    SUPABASE_KEY = data.data.key;
+                }
+            });
+            
+            function notifyParentReady() {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'GAME_READY' }, parentOrigin);
+                }
+            }
+            
+            function sendScoreToParent(score) {
+                if (window.parent !== window && score !== lastSavedScore) {
+                    window.parent.postMessage({ type: 'SAVE_SCORE', data: { score: score } }, parentOrigin);
+                    lastSavedScore = score;
+                }
+            }
+            
+            function requestRechargeFromParent() {
+                if (window.parent !== window) {
+                    window.parent.postMessage({ type: 'RECHARGE_REQUEST' }, parentOrigin);
+                }
+            }
+            
+            // Initialize
+            $(document).ready(function() {
+                checkUrlParams();
+                
+                // Generate random name
+                var randomNames = ['Ace', 'Jack', 'Queen', 'King', 'Joker', 'Dealer', 'Lucky', 'Winner'];
+                var randomName = randomNames[Math.floor(Math.random() * randomNames.length)] + '_' + Math.floor(Math.random() * 1000);
+                document.getElementById('player-name').value = randomName;
+            });
+        </script>
+        
+        <div class="check-fonts">
+            <p class="check-font-1">test 1</p>
+        </div> 
+        
+        <canvas id="canvas" class='ani_hack' width="1700" height="768"></canvas>
+        <div data-orientation="landscape" class="orientation-msg-container"><p class="orientation-msg-text">Please rotate your device</p></div>
+        <div id="block_game" style="position: fixed; background-color: transparent; top: 0px; left: 0px; width: 100%; height: 100%; display:none"></div>
+    </body>
+</html>
