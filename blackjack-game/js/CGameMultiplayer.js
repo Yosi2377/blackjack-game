@@ -82,16 +82,23 @@ function CGameMultiplayer(oData) {
         _aSeats = [];
         _aPlayerBets = [];
         this._createSeats(_iNumSeats);
+        
+        // In single player or quick start mode, auto-occupy the first seat
+        if (!_bMultiplayerMode || _iNumSeats === 1) {
+            _aSeats[0].setOccupied(true);
+            _aSeats[0].setPlayerInfo('Player 1', 'local_player');
+            _bWaitingForPlayers = false;
+        }
 
         _oCardContainer = new createjs.Container();
         s_oStage.addChild(_oCardContainer);
         
         _oInterface = new CInterface(TOTAL_MONEY);
         
-        if (_bMultiplayerMode) {
+        if (_bMultiplayerMode && _iNumSeats > 1 && _bWaitingForPlayers) {
             _oInterface.displayMsg(TEXT_WAITING_FOR_PLAYERS || "Waiting for players...");
         } else {
-            _oInterface.displayMsg(TEXT_DISPLAY_MSG_SIT_DOWN);
+            _oInterface.displayMsg(TEXT_DISPLAY_MSG_WAITING_BET || "Place your bet!");
         }
 
         this.reset(true);
@@ -115,16 +122,17 @@ function CGameMultiplayer(oData) {
 
         _oInterface.disableBetFiches();
         
-        if (!_bMultiplayerMode) {
-            // Single player mode - start immediately
+        _bUpdate = true;
+        
+        // Auto-start betting phase when solo or single player
+        if (!_bMultiplayerMode || _iNumSeats === 1 || !_bWaitingForPlayers) {
             if (_aSeats[0].getCredit() < _iMinBet) {
                 this._gameOver();
                 this.changeState(-1);
             } else {
-                _bUpdate = true;
+                _oInterface.enableBetFiches();
+                this.changeState(STATE_GAME_WAITING_FOR_BET);
             }
-        } else {
-            _bUpdate = true;
         }
     };
 
@@ -298,11 +306,12 @@ function CGameMultiplayer(oData) {
             if (_aSeats[i].isOccupied()) iOccupied++;
         }
         
-        if (iOccupied < 2) {
-            _oInterface.displayMsg("Waiting for players... (" + iOccupied + "/" + _iNumSeats + ")");
-        } else {
-            _oInterface.displayMsg("Press DEAL to start");
+        // Can play with 1 or more players - no need to wait
+        if (iOccupied >= 1) {
+            _oInterface.displayMsg("Press DEAL to start (" + iOccupied + " players)");
             _oInterface.enable(true, false, false, false, false);
+        } else {
+            _oInterface.displayMsg("Waiting for players... (" + iOccupied + "/" + _iNumSeats + ")");
         }
     };
 
@@ -345,13 +354,72 @@ function CGameMultiplayer(oData) {
     };
 
     this._dealCardToSeat = function(iSeat) {
-        if (iSeat < 0 || iSeat >= _aSeats.length) return;
+        if (iSeat < 0 || iSeat >= _aSeats.length || !_aSeats[iSeat]) return;
         
         var oSeat = _aSeats[iSeat];
+        if (!oSeat.isOccupied()) return;
+        
         var pStartingPoint = new CVector2(_oStartingCardOffset.getX(), _oStartingCardOffset.getY());
         var pEndingPoint = oSeat.getAttachCardOffset();
         
-        this.attachCardToPlayer(pStartingPoint, pEndingPoint, iSeat, oSeat.newCardDealed());
+        // Ensure we have cards
+        if (_iNextCardForPlayer >= _aCardsInCurHandForPlayer.length) {
+            this.shuffleCard();
+        }
+        
+        // Create and deal a card to the player
+        var oCard = new CCard(_oStartingCardOffset.getX(), _oStartingCardOffset.getY(), _oCardContainer);
+        var iCard = _aCardsInCurHandForPlayer[_iNextCardForPlayer];
+        _iNextCardForPlayer++;
+        
+        oCard.setInfo(pStartingPoint, pEndingPoint, iCard, s_oGameSettings.getCardValue(iCard), false, oSeat.newCardDealed());
+        oCard.seatIndex = iSeat;
+        oCard.isHitCard = true;  // Mark as hit card for special handling
+        oCard.addEventListener(ON_CARD_ANIMATION_ENDING, this._onHitCardArrived);
+        oCard.addEventListener(ON_CARD_TO_REMOVE, this._onRemoveCard);
+        
+        _aCardsDealing.push(oCard);
+        _aCardOut[iCard] += 1;
+        
+        playSound("card", 1, false);
+    };
+    
+    this._onHitCardArrived = function(oCard, bDealerCard, iCount) {
+        // Remove from dealing array
+        for (var i = 0; i < _aCardsDealing.length; i++) {
+            if (_aCardsDealing[i] === oCard) {
+                _aCardsDealing.splice(i, 1);
+                break;
+            }
+        }
+        
+        var iSeat = oCard.seatIndex;
+        if (iSeat >= 0 && iSeat < _aSeats.length && _aSeats[iSeat]) {
+            _aSeats[iSeat].addCardToHand(oCard);
+            _aSeats[iSeat].increaseHandValue(oCard.getValue());
+            _aSeats[iSeat].refreshCardValue();
+            
+            // Check if player busted or got 21
+            var iHandValue = _aSeats[iSeat].getHandValue(0);
+            if (iHandValue > 21) {
+                // Check for aces
+                if (_aSeats[iSeat].getAces && _aSeats[iSeat].getAces() > 0) {
+                    _aSeats[iSeat].removeAce();
+                    _aSeats[iSeat].refreshCardValue();
+                    iHandValue = _aSeats[iSeat].getHandValue(0);
+                }
+                
+                if (iHandValue > 21) {
+                    // Busted - show result and move to next player
+                    _aSeats[iSeat].showWinner(0, 'BUST!', 0);
+                    playSound("lose", 1, false);
+                    setTimeout(function() { s_oGame._onPlayerPassTurn(); }, 500);
+                }
+            } else if (iHandValue === 21) {
+                // Got 21 - automatically stand
+                setTimeout(function() { s_oGame._onPlayerPassTurn(); }, 500);
+            }
+        }
     };
 
     this._playerStand = function(iSeat) {
@@ -581,36 +649,41 @@ function CGameMultiplayer(oData) {
     };
 
     this._dealing = function() {
-        // Deal 2 cards to each player, then 2 to dealer
-        var iTotalCards = (_aSeats.length * 2) + 2; // Players + dealer
+        // Count occupied seats
+        var aOccupiedSeats = [];
+        for (var s = 0; s < _aSeats.length; s++) {
+            if (_aSeats[s] && _aSeats[s].isOccupied()) {
+                aOccupiedSeats.push(s);
+            }
+        }
+        
+        // Deal 2 cards to each occupied player, then 2 to dealer
+        var iNumOccupied = aOccupiedSeats.length;
+        var iTotalCards = (iNumOccupied * 2) + 2; // Players + dealer
         
         if (_iCardIndexToDeal < iTotalCards) {
-            var iRound = Math.floor(_iCardIndexToDeal / (_aSeats.length + 1));
-            var iTarget = _iCardIndexToDeal % (_aSeats.length + 1);
+            // Calculate which round (0 or 1) and target within round
+            var iRound = Math.floor(_iCardIndexToDeal / (iNumOccupied + 1));
+            var iTargetInRound = _iCardIndexToDeal % (iNumOccupied + 1);
             
             var oCard = new CCard(_oStartingCardOffset.getX(), _oStartingCardOffset.getY(), _oCardContainer);
             var pStartingPoint = new CVector2(_oStartingCardOffset.getX(), _oStartingCardOffset.getY());
             var pEndingPoint;
 
-            if (iTarget < _aSeats.length) {
-                // Deal to player
-                var oSeat = _aSeats[iTarget];
-                if (oSeat.isOccupied()) {
-                    pEndingPoint = oSeat.getAttachCardOffset();
-                    
-                    var iCard = _aCardsInCurHandForPlayer[_iNextCardForPlayer];
-                    oCard.setInfo(pStartingPoint, pEndingPoint, iCard, 
-                                  s_oGameSettings.getCardValue(iCard), false, oSeat.newCardDealed());
-                    oCard.seatIndex = iTarget;  // Track which seat
-                    
-                    _aCardOut[iCard] += 1;
-                    _iNextCardForPlayer++;
-                } else {
-                    // Skip empty seat
-                    _iCardIndexToDeal++;
-                    this._dealing();
-                    return;
-                }
+            if (iTargetInRound < iNumOccupied) {
+                // Deal to player at occupied seat
+                var iSeatIndex = aOccupiedSeats[iTargetInRound];
+                var oSeat = _aSeats[iSeatIndex];
+                
+                pEndingPoint = oSeat.getAttachCardOffset();
+                
+                var iCard = _aCardsInCurHandForPlayer[_iNextCardForPlayer];
+                oCard.setInfo(pStartingPoint, pEndingPoint, iCard, 
+                              s_oGameSettings.getCardValue(iCard), false, oSeat.newCardDealed());
+                oCard.seatIndex = iSeatIndex;  // Track which seat
+                
+                _aCardOut[iCard] += 1;
+                _iNextCardForPlayer++;
             } else {
                 // Deal to dealer
                 _iCardDealedToDealer++;
@@ -654,7 +727,7 @@ function CGameMultiplayer(oData) {
 
         if (!bDealerCard) {
             var iSeat = oCard.seatIndex !== undefined ? oCard.seatIndex : _iCurrentPlayerTurn;
-            if (iSeat >= 0 && iSeat < _aSeats.length) {
+            if (iSeat >= 0 && iSeat < _aSeats.length && _aSeats[iSeat]) {
                 _aSeats[iSeat].addCardToHand(oCard);
                 _aSeats[iSeat].increaseHandValue(oCard.getValue());
                 if (iCount > 2) {
@@ -672,8 +745,16 @@ function CGameMultiplayer(oData) {
             _aDealerCards.push(oCard);
         }
 
+        // Count occupied seats for accurate total card calculation
+        var iOccupiedSeats = 0;
+        for (var j = 0; j < _aSeats.length; j++) {
+            if (_aSeats[j] && _aSeats[j].isOccupied()) {
+                iOccupiedSeats++;
+            }
+        }
+        var iTotalCards = (iOccupiedSeats * 2) + 2;
+        
         // Continue dealing or check hands
-        var iTotalCards = (_aSeats.length * 2) + 2;
         if (_iCardIndexToDeal < iTotalCards) {
             s_oGame._dealing();
         } else {
@@ -682,36 +763,42 @@ function CGameMultiplayer(oData) {
     };
 
     this._checkAvailableActionForPlayer = function() {
-        // Find first active player
+        // Find first active player that can still play
         _iCurrentPlayerTurn = 0;
-        while (_iCurrentPlayerTurn < _aSeats.length && 
-               (!_aSeats[_iCurrentPlayerTurn].isOccupied() || 
-                _aSeats[_iCurrentPlayerTurn].getHandValue(0) === 21)) {
+        while (_iCurrentPlayerTurn < _aSeats.length) {
+            var oSeat = _aSeats[_iCurrentPlayerTurn];
+            if (oSeat && oSeat.isOccupied()) {
+                var iHandValue = oSeat.getHandValue(0);
+                // Player can play if they don't have 21 and haven't busted
+                if (iHandValue < 21) {
+                    break;
+                }
+            }
             _iCurrentPlayerTurn++;
         }
 
         if (_iCurrentPlayerTurn >= _aSeats.length) {
-            // All players done or have blackjack
+            // All players done or have blackjack/busted
             this._startDealerTurn();
             return;
         }
 
         // Refresh all card values
         for (var i = 0; i < _aSeats.length; i++) {
-            if (_aSeats[i].isOccupied()) {
+            if (_aSeats[i] && _aSeats[i].isOccupied()) {
                 _aSeats[i].refreshCardValue();
             }
         }
 
         this._highlightCurrentPlayer();
         
-        // Enable controls for current player
-        if (!_bMultiplayerMode || (_oMultiplayer && _oMultiplayer.isMyTurn())) {
+        // Enable controls for current player (in single player or if it's our turn)
+        if (!_bMultiplayerMode || _iNumSeats === 1 || (_oMultiplayer && _oMultiplayer.isMyTurn())) {
             var bDouble = this._canDouble(_iCurrentPlayerTurn);
             _oInterface.enable(false, true, true, bDouble, false);
         }
 
-        _oInterface.displayMsg(TEXT_DISPLAY_MSG_YOUR_ACTION);
+        _oInterface.displayMsg(TEXT_DISPLAY_MSG_YOUR_ACTION || "Your turn!");
     };
 
     this._onPlayerPassTurn = function() {
@@ -729,12 +816,12 @@ function CGameMultiplayer(oData) {
 
         if (_iCurrentPlayerTurn >= _aSeats.length) {
             // All players done
-            this._startDealerTurn();
+            s_oGame._startDealerTurn();
         } else {
-            this._highlightCurrentPlayer();
+            s_oGame._highlightCurrentPlayer();
             
             if (!_bMultiplayerMode || (_oMultiplayer && _oMultiplayer.isMyTurn())) {
-                var bDouble = this._canDouble(_iCurrentPlayerTurn);
+                var bDouble = s_oGame._canDouble(_iCurrentPlayerTurn);
                 _oInterface.enable(false, true, true, bDouble, false);
             }
         }
@@ -851,19 +938,24 @@ function CGameMultiplayer(oData) {
     };
 
     this.onHit = function() {
-        if (_bMultiplayerMode && _oMultiplayer) {
+        if (_bMultiplayerMode && _oMultiplayer && _iNumSeats > 1) {
             _oMultiplayer.sendAction('hit');
         } else {
+            // Single player or local game
             this._dealCardToSeat(_iCurrentPlayerTurn);
+            this.changeState(STATE_GAME_HITTING);
         }
     };
 
     this.onStand = function() {
-        if (_bMultiplayerMode && _oMultiplayer) {
+        if (_bMultiplayerMode && _oMultiplayer && _iNumSeats > 1) {
             _oMultiplayer.sendAction('stand');
         } else {
-            this._playerStand(_iCurrentPlayerTurn);
-            this._onPlayerPassTurn();
+            // Single player or local game
+            if (_iCurrentPlayerTurn >= 0 && _iCurrentPlayerTurn < _aSeats.length && _aSeats[_iCurrentPlayerTurn]) {
+                _aSeats[_iCurrentPlayerTurn].stand();
+            }
+            s_oGame._onPlayerPassTurn();
         }
     };
 

@@ -163,13 +163,27 @@ function sizeHandler() {
 	}
 
 	var h;
-        if(platform.name !== null && platform.name.toLowerCase() === "safari"){
-            h = getIOSWindowHeight();
-        }else{ 
-            h = getSize("Height");
-        }
-        
-        var w = getSize("Width");
+	var w;
+	
+	// Check if we're in an iframe
+	var bInIframe = (window.self !== window.top);
+	
+	if (bInIframe) {
+		// In iframe - use parent window size or document size
+		try {
+			h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+			w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+		} catch (e) {
+			h = getSize("Height");
+			w = getSize("Width");
+		}
+	} else if (platform.name !== null && platform.name.toLowerCase() === "safari") {
+		h = getIOSWindowHeight();
+		w = getSize("Width");
+	} else { 
+		h = getSize("Height");
+		w = getSize("Width");
+	}
         
         if(s_bFocus){
             _checkOrientation(w,h);

@@ -838,6 +838,10 @@ function CGame(oData){
         return _iState;
     };
     
+    this.getMoney = function(){
+        return _oSeat ? _oSeat.getCredit() : 0;
+    };
+    
     this._updateWaitingBet = function(){
         _iTimeElaps += s_iTimeElaps;
         if(_iTimeElaps>BET_TIME){

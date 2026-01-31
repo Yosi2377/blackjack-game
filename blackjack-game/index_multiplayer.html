@@ -235,6 +235,9 @@
                 <button class="lobby-btn btn-join" onclick="showJoinRoom()">
                     🚪 Join Room
                 </button>
+                <button class="lobby-btn btn-single" onclick="quickStart(1)" style="margin-top: 20px; background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);">
+                    ⚡ Quick Start (1 Player)
+                </button>
             </div>
             
             <!-- Create Room Screen -->
@@ -264,13 +267,22 @@
                 <div id="room-code">------</div>
                 
                 <div id="players-list">
-                    <p class="waiting-text">Waiting for players...</p>
+                    <p>לחץ Start Game להתחיל (אפשר גם לבד!)</p>
                 </div>
                 
-                <button class="lobby-btn btn-multi" id="start-game-btn" onclick="startMultiplayerGame()" style="display:none">
-                    Start Game
+                <button class="lobby-btn btn-multi" id="start-game-btn" onclick="startMultiplayerGame()">
+                    🎮 Start Game
                 </button>
                 <button class="back-btn" onclick="leaveRoom()">Leave Room</button>
+            </div>
+            
+            <!-- Quick Start (bypasses lobby) -->
+            <div id="lobby-quick" class="lobby-container hidden">
+                <h1 class="lobby-title">♠ Quick Play ♣</h1>
+                <button class="lobby-btn btn-multi" onclick="quickStart(1)">1 Player</button>
+                <button class="lobby-btn btn-multi" onclick="quickStart(2)">2 Players</button>
+                <button class="lobby-btn btn-multi" onclick="quickStart(3)">3 Players</button>
+                <button class="back-btn" onclick="showMainMenu()">← Back</button>
             </div>
             
             <!-- Join Room Screen -->
@@ -458,8 +470,10 @@
                 
                 html += '</ul>';
                 
-                if (players.length < 2) {
-                    html += '<p class="waiting-text">Waiting for more players...</p>';
+                if (players.length < 1) {
+                    html += '<p class="waiting-text">Waiting for players...</p>';
+                } else {
+                    html += '<p style="color: #4CAF50;">מוכן להתחיל! לחץ Start Game</p>';
                 }
                 
                 document.getElementById('players-list').innerHTML = html;
@@ -471,7 +485,8 @@
                 var players = multiplayerManager.getPlayers();
                 var startBtn = document.getElementById('start-game-btn');
                 
-                if (players.length >= 2) {
+                // Can start with 1 or more players (no need to wait)
+                if (players.length >= 1) {
                     startBtn.style.display = 'block';
                 } else {
                     startBtn.style.display = 'none';
@@ -479,13 +494,33 @@
             }
             
             function startMultiplayerGame() {
-                if (!multiplayerManager || !multiplayerManager.isHost()) return;
+                console.log('[Lobby] startMultiplayerGame called');
                 
                 gameStarted = true;
                 document.getElementById('lobby-overlay').classList.add('hidden');
                 
-                var numPlayers = multiplayerManager.getPlayers().length;
+                // Get number of players, default to 1 if no manager
+                var numPlayers = 1;
+                if (multiplayerManager && multiplayerManager.getPlayers) {
+                    numPlayers = multiplayerManager.getPlayers().length || 1;
+                }
+                
+                console.log('[Lobby] Starting game with', numPlayers, 'players');
+                initGame(true, Math.max(numPlayers, 1));
+            }
+            
+            // Quick start - bypass lobby entirely
+            function quickStart(numPlayers) {
+                console.log('[Lobby] Quick start with', numPlayers, 'players');
+                gameStarted = true;
+                document.getElementById('lobby-overlay').classList.add('hidden');
                 initGame(true, numPlayers);
+            }
+            
+            // Show quick start screen
+            function showQuickStart() {
+                hideAllScreens();
+                document.getElementById('lobby-quick').classList.remove('hidden');
             }
             
             function startMultiplayerGameAsClient() {
@@ -666,7 +701,7 @@
             <p class="check-font-1">test 1</p>
         </div> 
         
-        <canvas id="canvas" class='ani_hack' width="1700" height="768"></canvas>
+        <canvas id="canvas" class='ani_hack' width="1700" height="768" style="display:block;"></canvas>
         <div data-orientation="landscape" class="orientation-msg-container"><p class="orientation-msg-text">Please rotate your device</p></div>
         <div id="block_game" style="position: fixed; background-color: transparent; top: 0px; left: 0px; width: 100%; height: 100%; display:none"></div>
     </body>

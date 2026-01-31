@@ -176,10 +176,16 @@ function CMain(oData){
     };
     
     this.gotoGame = function(){
-        // Check if multiplayer mode is enabled
-        if (_oData.multiplayer && typeof CGameMultiplayer !== 'undefined') {
+        // Check if multiplayer mode is enabled and num_seats > 1
+        if (_oData.multiplayer && _oData.num_seats > 1 && typeof CGameMultiplayer !== 'undefined' && typeof CSeatMultiplayer !== 'undefined') {
+            console.log('[CMain] Starting CGameMultiplayer with', _oData.num_seats, 'seats');
+            _oGame = new CGameMultiplayer(_oData);
+        } else if (_oData.multiplayer && _oData.num_seats === 1 && typeof CGameMultiplayer !== 'undefined' && typeof CSeatMultiplayer !== 'undefined') {
+            // Single player in multiplayer mode - still use CGameMultiplayer for consistency
+            console.log('[CMain] Starting CGameMultiplayer with 1 seat');
             _oGame = new CGameMultiplayer(_oData);
         } else {
+            console.log('[CMain] Starting regular CGame');
             _oGame = new CGame(_oData);
         }
 							
