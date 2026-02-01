@@ -719,6 +719,20 @@
                             case 'c': s_oInterface._onButClearRelease(); console.log('[Keyboard Bridge] CLEAR'); break;
                             case 'r': s_oInterface._onButRebetRelease(); console.log('[Keyboard Bridge] REBET'); break;
                         }
+                        
+                        // Force canvas repaint to fix compositing issues in iframe
+                        if (s_oStage) {
+                            s_oStage.update();
+                        }
+                        
+                        // Force CSS repaint by toggling a class
+                        var canvas = document.getElementById('canvas');
+                        if (canvas) {
+                            canvas.style.opacity = '0.99';
+                            setTimeout(function() {
+                                canvas.style.opacity = '1';
+                            }, 10);
+                        }
                     } catch(err) {
                         console.error('[Keyboard Bridge] Error:', err.message);
                     }
