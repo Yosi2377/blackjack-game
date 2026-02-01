@@ -312,10 +312,29 @@
             var parentOrigin = '*';
             var lastSavedScore = 0;
             
-            // Check URL params for room code
+            // Check URL params for room code or direct table join
             function checkUrlParams() {
                 var params = new URLSearchParams(window.location.search);
                 var roomCode = params.get('room');
+                var tableId = params.get('table');
+                var seat = params.get('seat');
+                var user = params.get('user');
+                var players = params.get('players');
+                
+                // Direct table join from parent app (skip menu completely)
+                if (tableId && seat && user) {
+                    console.log('[Game] Starting directly from URL params, seat:', seat, 'user:', user);
+                    document.getElementById('player-name').value = user;
+                    
+                    // Hide the lobby and start game directly
+                    document.getElementById('lobby-overlay').classList.add('hidden');
+                    
+                    // Start the game with multiplayer settings
+                    var numPlayers = parseInt(players) || 7;
+                    initGame(true, numPlayers, tableId, parseInt(seat), user);
+                    return;
+                }
+                
                 if (roomCode) {
                     document.getElementById('room-code-input').value = roomCode.toUpperCase();
                     showJoinRoom();
@@ -532,7 +551,39 @@
             }
             
             // Initialize Game
-            function initGame(bMultiplayer, iNumPlayers) {
+            function initGame(bMultiplayer, iNumPlayers, tableId, seatNumber, username) {
+                // If starting from URL params with table info, create multiplayer manager
+                if (bMultiplayer && tableId && !multiplayerManager) {
+                    var playerName = username || getPlayerName();
+                    
+                    multiplayerManager = new CMultiplayerManager({
+                        playerName: playerName,
+                        supabaseUrl: SUPABASE_URL,
+                        supabaseKey: SUPABASE_KEY
+                    });
+                    
+                    multiplayerManager.addEventListener(multiplayerManager.EVENT_CONNECTED, function(data) {
+                        console.log('[Game] Connected to table:', data.tableId);
+                        // Game is already started, just update UI
+                        if (typeof s_oGame !== 'undefined') {
+                            s_oGame.setMultiplayerManager(multiplayerManager);
+                        }
+                    }, this);
+                    
+                    multiplayerManager.addEventListener(multiplayerManager.EVENT_ERROR, function(data) {
+                        console.error('[Game] Multiplayer error:', data.message);
+                    }, this);
+                    
+                    // Join the table
+                    multiplayerManager.joinTable(tableId, function(success) {
+                        if (success) {
+                            console.log('[Game] Successfully joined table');
+                        } else {
+                            console.error('[Game] Failed to join table');
+                        }
+                    });
+                }
+                
                 var oMain = new CMain({
                     win_occurrence: 40,
                     min_bet: 1,
@@ -548,7 +599,11 @@
                     ad_show_counter: 999,
                     // Multiplayer options
                     multiplayer: bMultiplayer,
-                    num_seats: iNumPlayers
+                    num_seats: iNumPlayers,
+                    // Direct start params
+                    table_id: tableId,
+                    seat_number: seatNumber,
+                    player_name: username
                 });
 
                 $(oMain).on("recharge", function(evt) {

@@ -167,7 +167,13 @@ function CMain(oData){
     this._onRemovePreloader = function(){
         _oPreloader.unload();
 
-        this.gotoMenu();
+        // Check if we should skip menu and go directly to game (from URL params)
+        if (_oData.table_id && _oData.seat_number) {
+            console.log('[CMain] Skipping menu, going directly to game');
+            this.gotoGame();
+        } else {
+            this.gotoMenu();
+        }
     };
     
     this.gotoMenu = function(){
