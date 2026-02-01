@@ -757,6 +757,100 @@
                 var randomName = randomNames[Math.floor(Math.random() * randomNames.length)] + '_' + Math.floor(Math.random() * 1000);
                 document.getElementById('player-name').value = randomName;
             });
+            
+            // ============================================
+            // KEYBOARD CONTROLS FOR AUTOMATION
+            // ============================================
+            // Keys:
+            //   1-6: Select chip (0.1, 1, 5, 10, 25, 100)
+            //   D: Deal
+            //   H: Hit
+            //   S: Stand
+            //   O: Double
+            //   P: Split
+            //   C: Clear bet
+            //   R: Rebet
+            // ============================================
+            
+            document.addEventListener('keydown', function(e) {
+                // Don't handle if typing in an input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                
+                var key = e.key.toLowerCase();
+                console.log('[Keyboard] Key pressed:', key);
+                
+                // Check if game and interface exist
+                if (typeof s_oGame === 'undefined' || typeof s_oInterface === 'undefined') {
+                    console.log('[Keyboard] Game not ready');
+                    return;
+                }
+                
+                try {
+                    switch(key) {
+                        // Chip selection (1-6)
+                        case '1':
+                            s_oGame.ficheSelected(0.1, 0);
+                            console.log('[Keyboard] Selected chip 0.1');
+                            break;
+                        case '2':
+                            s_oGame.ficheSelected(1, 1);
+                            console.log('[Keyboard] Selected chip 1');
+                            break;
+                        case '3':
+                            s_oGame.ficheSelected(5, 2);
+                            console.log('[Keyboard] Selected chip 5');
+                            break;
+                        case '4':
+                            s_oGame.ficheSelected(10, 3);
+                            console.log('[Keyboard] Selected chip 10');
+                            break;
+                        case '5':
+                            s_oGame.ficheSelected(25, 4);
+                            console.log('[Keyboard] Selected chip 25');
+                            break;
+                        case '6':
+                            s_oGame.ficheSelected(100, 5);
+                            console.log('[Keyboard] Selected chip 100');
+                            break;
+                        
+                        // Game actions
+                        case 'd':
+                            s_oInterface._onButDealRelease();
+                            console.log('[Keyboard] DEAL');
+                            break;
+                        case 'h':
+                            s_oInterface._onButHitRelease();
+                            console.log('[Keyboard] HIT');
+                            break;
+                        case 's':
+                            s_oInterface._onButStandRelease();
+                            console.log('[Keyboard] STAND');
+                            break;
+                        case 'o':
+                            s_oInterface._onButDoubleRelease();
+                            console.log('[Keyboard] DOUBLE');
+                            break;
+                        case 'p':
+                            s_oInterface._onButSplitRelease();
+                            console.log('[Keyboard] SPLIT');
+                            break;
+                        case 'c':
+                            s_oInterface._onButClearRelease();
+                            console.log('[Keyboard] CLEAR');
+                            break;
+                        case 'r':
+                            s_oInterface._onButRebetRelease();
+                            console.log('[Keyboard] REBET');
+                            break;
+                    }
+                } catch(err) {
+                    console.error('[Keyboard] Error:', err.message);
+                }
+            });
+            
+            console.log('[Keyboard] Controls enabled: 1-6=chips, D=deal, H=hit, S=stand, O=double, P=split, C=clear, R=rebet');
         </script>
         
         <div class="check-fonts">
