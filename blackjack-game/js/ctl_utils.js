@@ -204,13 +204,14 @@ function sizeHandler() {
             _checkOrientation(w,h);
         }
 	
-	// For mobile in portrait mode, scale to fit width and allow scrolling/overflow
+	// For mobile in portrait mode, scale to fit entire game
 	var bPortrait = (h > w);
 	var bMobileDevice = isMobile();
 	
 	var multiplier;
 	if (bMobileDevice && bPortrait) {
-		// On mobile portrait: fit to width, game will be taller
+		// On mobile portrait: fit entire game in viewport (scale to fit width)
+		// This ensures nothing is cut off
 		multiplier = w / CANVAS_WIDTH;
 	} else {
 		// Normal: fit to smallest dimension
@@ -299,6 +300,26 @@ function sizeHandler() {
         // Center the canvas
         fOffsetY = Math.max(0, (h - destH) / 2);
         fOffsetX = Math.max(0, (w - destW) / 2);
+        
+        // On mobile portrait, ensure canvas fits within viewport
+        if (bMobileDevice && bPortrait) {
+            // Ensure the canvas doesn't exceed viewport width
+            if (destW > w) {
+                var newScale = w / destW;
+                destW = w;
+                destH = destH * newScale;
+                if (s_oStage) {
+                    s_iScaleFactor = s_iScaleFactor * newScale;
+                    s_oStage.scaleX = s_oStage.scaleY = s_iScaleFactor;
+                    s_oStage.canvas.width = destW;
+                    s_oStage.canvas.height = destH;
+                }
+                $("#canvas").css("width", destW + "px");
+                $("#canvas").css("height", destH + "px");
+            }
+            fOffsetX = 0; // No horizontal offset on mobile portrait
+            fOffsetY = Math.max(0, (h - destH) / 2);
+        }
         
         $("#canvas").css("top", fOffsetY + "px");
         $("#canvas").css("left", fOffsetX + "px");
