@@ -84,11 +84,13 @@ function CGameMultiplayer(oData) {
         this._createSeats(_iNumSeats);
         
         // In single player or quick start mode, auto-occupy the first seat
+        // MODIFIED: Allow solo play in multiplayer - don't wait for other players
         if (!_bMultiplayerMode || _iNumSeats === 1) {
             _aSeats[0].setOccupied(true);
             _aSeats[0].setPlayerInfo('Player 1', 'local_player');
-            _bWaitingForPlayers = false;
         }
+        // Always allow solo play - no waiting for players
+        _bWaitingForPlayers = false;
 
         _oCardContainer = new createjs.Container();
         s_oStage.addChild(_oCardContainer);
@@ -1034,9 +1036,13 @@ function CGameMultiplayer(oData) {
     };
 
     this._onSitDown = function() {
-        if (!_bMultiplayerMode) {
-            this.changeState(STATE_GAME_WAITING_FOR_BET);
-            _oInterface.enableBetFiches();
+        // Enable betting when player sits down (both single and multiplayer)
+        this.changeState(STATE_GAME_WAITING_FOR_BET);
+        _oInterface.enableBetFiches();
+        
+        // In multiplayer, also trigger the betting phase
+        if (_bMultiplayerMode && _oMultiplayer && _oMultiplayer.isHost()) {
+            _oMultiplayer.startBetting();
         }
     };
 
