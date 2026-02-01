@@ -18,14 +18,26 @@ function CFiche(iX,iY,iIndex,szValue,bClickable,oParentContainer){
         _oContainer.y = iY;
         _oParentContainer.addChild(_oContainer);
         
+        // Validate fiche index (0-5 are valid)
+        if (iIndex < 0 || iIndex > 5) {
+            console.warn('[CFiche] Invalid fiche index:', iIndex, '- using 0');
+            iIndex = 0;
+        }
+        
         var oSpriteFiche = s_oSpriteLibrary.getSprite('fiche_'+iIndex);
+        if (!oSpriteFiche) {
+            console.error('[CFiche] Sprite not found for fiche_' + iIndex);
+            oSpriteFiche = s_oSpriteLibrary.getSprite('fiche_0'); // Fallback
+        }
+        
         _oSprite = createBitmap(oSpriteFiche);
         _oContainer.addChild(_oSprite);
         
-        var iSize = SIZE_FONT_FICHE[iIndex];
+        var iSize = SIZE_FONT_FICHE[iIndex] || 12;
+        var sColor = COLOR_FICHE_PER_VALUE[iIndex] || "#ffffff";
         _oTextValue = new CTLText(_oContainer, 
                     9, 7, 22, 18, 
-                    iSize, "center",  COLOR_FICHE_PER_VALUE[iIndex], FONT_GAME_1, 1,
+                    iSize, "center", sColor, FONT_GAME_1, 1,
                     0, 0,
                     szValue,
                     true, true, false,
@@ -34,8 +46,8 @@ function CFiche(iX,iY,iIndex,szValue,bClickable,oParentContainer){
         
         if(bClickable){
             _bDisable = false;
-            _iWidth = oSpriteFiche.width;
-            _iHeight = oSpriteFiche.height;
+            _iWidth = oSpriteFiche ? oSpriteFiche.width : 40;
+            _iHeight = oSpriteFiche ? oSpriteFiche.height : 40;
         
             _aCbCompleted=new Array();
             _aCbOwner =new Array();

@@ -1008,10 +1008,26 @@ function CGameMultiplayer(oData) {
 
     // Original bet handling for single player
     this.ficheSelected = function(iFicheValue, iFicheIndex) {
+        // Validate parameters
+        if (typeof iFicheValue !== 'number' || isNaN(iFicheValue) || iFicheValue <= 0) {
+            console.warn('[Game] Invalid fiche value:', iFicheValue);
+            return;
+        }
+        if (typeof iFicheIndex !== 'number' || iFicheIndex < 0 || iFicheIndex > 5) {
+            console.warn('[Game] Invalid fiche index:', iFicheIndex, '- guessing from value');
+            // Try to find correct index based on value
+            var aFichesValues = s_oGameSettings.getFichesValues();
+            iFicheIndex = aFichesValues.indexOf(iFicheValue);
+            if (iFicheIndex < 0) iFicheIndex = 0;
+        }
+        
         if (_bMultiplayerMode) {
             // In multiplayer, bets go to the player's own seat
             var iMySeat = _oMultiplayer ? _oMultiplayer.getSeatIndex() : 0;
-            if (iMySeat < 0) return;
+            // If no multiplayer manager or seat not set, default to seat 0
+            if (iMySeat < 0 || iMySeat === undefined) {
+                iMySeat = 0;
+            }
             
             var oSeat = _aSeats[iMySeat];
             var iCurBet = oSeat.getCurBet();
