@@ -173,6 +173,15 @@ function sizeHandler() {
 		try {
 			h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 			w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+			
+			// Fallback: if dimensions are 0 or very small, wait and try again
+			if (h < 100 || w < 100) {
+				console.log('[sizeHandler] iframe dimensions too small:', w, 'x', h, '- will retry');
+				setTimeout(sizeHandler, 500);
+				return;
+			}
+			
+			console.log('[sizeHandler] iframe detected, size:', w, 'x', h);
 		} catch (e) {
 			h = getSize("Height");
 			w = getSize("Width");

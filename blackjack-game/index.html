@@ -157,6 +157,13 @@
                         sizeHandler();
                     }
                     
+                    // If in iframe, call sizeHandler again after delay to ensure proper sizing
+                    if (window.self !== window.top) {
+                        setTimeout(sizeHandler, 500);
+                        setTimeout(sizeHandler, 1000);
+                        setTimeout(sizeHandler, 2000);
+                    }
+                    
                     // Notify parent that game is loaded
                     setTimeout(notifyParentReady, 2000);
            });
