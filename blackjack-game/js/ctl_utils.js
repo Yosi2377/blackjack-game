@@ -180,12 +180,11 @@ function sizeHandler() {
 			
 			// Fallback: if dimensions are 0 or very small, use last valid dimensions or wait
 			if (h < 100 || w < 100) {
-				console.log('[sizeHandler] iframe dimensions too small:', w, 'x', h, '- using last valid or retrying');
+				console.log('[sizeHandler] iframe dimensions too small:', w, 'x', h, '- will retry');
 				if (_lastValidWidth > 100 && _lastValidHeight > 100) {
-					// Use last valid dimensions instead of bad ones
-					w = _lastValidWidth;
-					h = _lastValidHeight;
-					console.log('[sizeHandler] Using last valid dimensions:', w, 'x', h);
+					// Use last valid dimensions instead of bad ones, but don't update canvas
+					console.log('[sizeHandler] Keeping last valid dimensions:', _lastValidWidth, 'x', _lastValidHeight);
+					return; // Don't resize at all with bad dimensions
 				} else {
 					// No valid dimensions yet, just retry
 					setTimeout(sizeHandler, 500);
@@ -211,7 +210,8 @@ function sizeHandler() {
 	}
 	
 	// Mobile viewport fix - use visual viewport if available
-	if (window.visualViewport) {
+	// But NOT in iframes where we already have valid dimensions
+	if (window.visualViewport && !bInIframe) {
 		w = window.visualViewport.width;
 		h = window.visualViewport.height;
 	}
