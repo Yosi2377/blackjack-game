@@ -51,15 +51,13 @@ function CGameMultiplayer(oData) {
     var _bWaitingForPlayers;
     var _bAllBetsPlaced;
 
-    // Seat positions for up to 7 players (x, y coordinates)
+    // Seat positions for 5 players (x, y coordinates)
     var SEAT_POSITIONS = [
-        { x: 300, y: 380 },   // Seat 0 - far far left
-        { x: 450, y: 420 },   // Seat 1 - far left
-        { x: 580, y: 450 },   // Seat 2 - left
-        { x: 710, y: 470 },   // Seat 3 - center left
-        { x: 850, y: 470 },   // Seat 4 - center right
-        { x: 990, y: 450 },   // Seat 5 - right
-        { x: 1130, y: 420 }   // Seat 6 - far right
+        { x: 450, y: 400 },   // Seat 0 - far left
+        { x: 620, y: 440 },   // Seat 1 - left
+        { x: 800, y: 460 },   // Seat 2 - center
+        { x: 980, y: 440 },   // Seat 3 - right  
+        { x: 1150, y: 400 }   // Seat 4 - far right
     ];
 
     this._init = function() {
@@ -158,25 +156,21 @@ function CGameMultiplayer(oData) {
 
     this._getSeatPositions = function(iNumSeats) {
         // Return appropriate positions based on number of players
-        // Clamp to max 7 seats
-        iNumSeats = Math.min(iNumSeats, 7);
+        // Clamp to max 5 seats
+        iNumSeats = Math.min(iNumSeats, 5);
         
         switch (iNumSeats) {
             case 1:
-                return [SEAT_POSITIONS[3]]; // Center only
+                return [SEAT_POSITIONS[2]]; // Center only
             case 2:
-                return [SEAT_POSITIONS[2], SEAT_POSITIONS[4]]; // Left and right of center
+                return [SEAT_POSITIONS[1], SEAT_POSITIONS[3]]; // Left and right
             case 3:
-                return [SEAT_POSITIONS[2], SEAT_POSITIONS[3], SEAT_POSITIONS[4]];
+                return [SEAT_POSITIONS[1], SEAT_POSITIONS[2], SEAT_POSITIONS[3]];
             case 4:
-                return [SEAT_POSITIONS[1], SEAT_POSITIONS[2], SEAT_POSITIONS[4], SEAT_POSITIONS[5]];
+                return [SEAT_POSITIONS[0], SEAT_POSITIONS[1], SEAT_POSITIONS[3], SEAT_POSITIONS[4]];
             case 5:
-                return [SEAT_POSITIONS[1], SEAT_POSITIONS[2], SEAT_POSITIONS[3], SEAT_POSITIONS[4], SEAT_POSITIONS[5]];
-            case 6:
-                return [SEAT_POSITIONS[0], SEAT_POSITIONS[1], SEAT_POSITIONS[2], SEAT_POSITIONS[4], SEAT_POSITIONS[5], SEAT_POSITIONS[6]];
-            case 7:
             default:
-                return SEAT_POSITIONS.slice(0, iNumSeats);
+                return SEAT_POSITIONS;
         }
     };
 
