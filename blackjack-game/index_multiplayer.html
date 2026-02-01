@@ -690,6 +690,39 @@
                         autoJoinTable(tableInfo);
                     }
                 }
+                
+                // KEYBOARD BRIDGE - Handle keyboard events from parent window
+                if (data && data.type === 'KEYBOARD_EVENT') {
+                    var keyData = data.data;
+                    var key = keyData.key.toLowerCase();
+                    console.log('[Keyboard Bridge] Key from parent:', key);
+                    
+                    // Check if game and interface exist
+                    if (typeof s_oGame === 'undefined' || typeof s_oInterface === 'undefined') {
+                        console.log('[Keyboard Bridge] Game not ready');
+                        return;
+                    }
+                    
+                    try {
+                        switch(key) {
+                            case '1': s_oGame.ficheSelected(0.1, 0); console.log('[Keyboard Bridge] Selected chip 0.1'); break;
+                            case '2': s_oGame.ficheSelected(1, 1); console.log('[Keyboard Bridge] Selected chip 1'); break;
+                            case '3': s_oGame.ficheSelected(5, 2); console.log('[Keyboard Bridge] Selected chip 5'); break;
+                            case '4': s_oGame.ficheSelected(10, 3); console.log('[Keyboard Bridge] Selected chip 10'); break;
+                            case '5': s_oGame.ficheSelected(25, 4); console.log('[Keyboard Bridge] Selected chip 25'); break;
+                            case '6': s_oGame.ficheSelected(100, 5); console.log('[Keyboard Bridge] Selected chip 100'); break;
+                            case 'd': s_oInterface._onButDealRelease(); console.log('[Keyboard Bridge] DEAL'); break;
+                            case 'h': s_oInterface._onButHitRelease(); console.log('[Keyboard Bridge] HIT'); break;
+                            case 's': s_oInterface._onButStandRelease(); console.log('[Keyboard Bridge] STAND'); break;
+                            case 'o': s_oInterface._onButDoubleRelease(); console.log('[Keyboard Bridge] DOUBLE'); break;
+                            case 'p': s_oInterface._onButSplitRelease(); console.log('[Keyboard Bridge] SPLIT'); break;
+                            case 'c': s_oInterface._onButClearRelease(); console.log('[Keyboard Bridge] CLEAR'); break;
+                            case 'r': s_oInterface._onButRebetRelease(); console.log('[Keyboard Bridge] REBET'); break;
+                        }
+                    } catch(err) {
+                        console.error('[Keyboard Bridge] Error:', err.message);
+                    }
+                }
             });
             
             // Auto-join a table from parent window
