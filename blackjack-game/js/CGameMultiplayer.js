@@ -132,7 +132,9 @@ function CGameMultiplayer(oData) {
                 this._gameOver();
                 this.changeState(-1);
             } else {
-                _oInterface.enableBetFiches();
+                if (_oInterface) {
+                    _oInterface.enableBetFiches();
+                }
                 this.changeState(STATE_GAME_WAITING_FOR_BET);
             }
         }
@@ -322,8 +324,10 @@ function CGameMultiplayer(oData) {
 
     this._startBettingPhase = function() {
         _bAllBetsPlaced = false;
-        _oInterface.displayMsg("Place your bets!");
-        _oInterface.enableBetFiches();
+        if (_oInterface) {
+            _oInterface.displayMsg("Place your bets!");
+            _oInterface.enableBetFiches();
+        }
         
         for (var i = 0; i < _aSeats.length; i++) {
             _aSeats[i].enableBetting(true);
@@ -332,9 +336,11 @@ function CGameMultiplayer(oData) {
     };
 
     this._startDealingPhase = function() {
-        _oInterface.disableBetFiches();
-        _oInterface.disableButtons();
-        _oInterface.displayMsg(TEXT_DISPLAY_MSG_DEALING);
+        if (_oInterface) {
+            _oInterface.disableBetFiches();
+            _oInterface.disableButtons();
+            _oInterface.displayMsg(TEXT_DISPLAY_MSG_DEALING);
+        }
         this._dealing();
     };
 
@@ -343,7 +349,7 @@ function CGameMultiplayer(oData) {
             _aSeats[i].setActive(i === _iCurrentPlayerTurn);
         }
         
-        if (_iCurrentPlayerTurn >= 0 && _iCurrentPlayerTurn < _aSeats.length) {
+        if (_iCurrentPlayerTurn >= 0 && _iCurrentPlayerTurn < _aSeats.length && _oInterface) {
             var sName = _aSeats[_iCurrentPlayerTurn].getPlayerName();
             _oInterface.displayMsg(sName + "'s turn");
         }
@@ -603,10 +609,12 @@ function CGameMultiplayer(oData) {
         _aCardsDealing = [];
         _aDealerCards = [];
 
-        _oInterface.reset();
-        
-        if (!_bMultiplayerMode) {
-            _oInterface.enableBetFiches();
+        if (_oInterface) {
+            _oInterface.reset();
+            
+            if (!_bMultiplayerMode) {
+                _oInterface.enableBetFiches();
+            }
         }
         
         if (bFirstPlay) {
@@ -1049,7 +1057,9 @@ function CGameMultiplayer(oData) {
         
         // Enable betting when player sits down (both single and multiplayer)
         this.changeState(STATE_GAME_WAITING_FOR_BET);
-        _oInterface.enableBetFiches();
+        if (_oInterface) {
+            _oInterface.enableBetFiches();
+        }
         
         // In multiplayer, also trigger the betting phase
         if (_bMultiplayerMode && _oMultiplayer && _oMultiplayer.isHost()) {
