@@ -155,6 +155,10 @@ function getHeightOfIOSToolbars() {
 
 //THIS FUNCTION MANAGES THE CANVAS SCALING TO FIT PROPORTIONALLY THE GAME TO THE CURRENT DEVICE RESOLUTION
 
+// Store last valid dimensions to recover from bad resize events
+var _lastValidWidth = 0;
+var _lastValidHeight = 0;
+
 function sizeHandler() {
 	window.scrollTo(0, 1);
 
@@ -174,11 +178,23 @@ function sizeHandler() {
 			h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 			w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 			
-			// Fallback: if dimensions are 0 or very small, wait and try again
+			// Fallback: if dimensions are 0 or very small, use last valid dimensions or wait
 			if (h < 100 || w < 100) {
-				console.log('[sizeHandler] iframe dimensions too small:', w, 'x', h, '- will retry');
-				setTimeout(sizeHandler, 500);
-				return;
+				console.log('[sizeHandler] iframe dimensions too small:', w, 'x', h, '- using last valid or retrying');
+				if (_lastValidWidth > 100 && _lastValidHeight > 100) {
+					// Use last valid dimensions instead of bad ones
+					w = _lastValidWidth;
+					h = _lastValidHeight;
+					console.log('[sizeHandler] Using last valid dimensions:', w, 'x', h);
+				} else {
+					// No valid dimensions yet, just retry
+					setTimeout(sizeHandler, 500);
+					return;
+				}
+			} else {
+				// Store valid dimensions
+				_lastValidWidth = w;
+				_lastValidHeight = h;
 			}
 			
 			console.log('[sizeHandler] iframe detected, size:', w, 'x', h);
