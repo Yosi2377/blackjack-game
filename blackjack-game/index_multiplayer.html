@@ -307,7 +307,7 @@
             var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxdWF6eG94dnJudG9vY3V2ZHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MDA2MTYsImV4cCI6MjA4NTI3NjYxNn0.ra6DCFTVUuP2jOVaL94_6ku_eJPW8pPdba5QFaSjmNM';
             
             var multiplayerManager = null;
-            var selectedPlayers = 3;
+            var selectedPlayers = 2;
             var gameStarted = false;
             var parentOrigin = '*';
             var lastSavedScore = 0;
@@ -330,7 +330,7 @@
                     document.getElementById('lobby-overlay').classList.add('hidden');
                     
                     // Start the game with multiplayer settings
-                    var numPlayers = parseInt(players) || 7;
+                    var numPlayers = parseInt(players) || 2;
                     initGame(true, numPlayers, tableId, parseInt(seat), user);
                     return;
                 }
