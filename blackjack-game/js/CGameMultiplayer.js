@@ -949,30 +949,48 @@ function CGameMultiplayer(oData) {
             return;
         }
         
-        // In solo multiplayer or single player, just start dealing
-        if (!_bMultiplayerMode || _iNumSeats === 1) {
+        // Count occupied seats
+        var iOccupied = 0;
+        for (var i = 0; i < _aSeats.length; i++) {
+            if (_aSeats[i] && _aSeats[i].isOccupied()) iOccupied++;
+        }
+        
+        // In single player mode, or if only one player is seated, just start dealing
+        if (!_bMultiplayerMode || iOccupied <= 1) {
             this.changeState(STATE_GAME_DEALING);
         } else if (_oMultiplayer && _oMultiplayer.isHost()) {
-            // True multiplayer - host starts the round
+            // True multiplayer with multiple players - host starts the round
             _oMultiplayer.startDealing();
         }
     };
 
     this.onHit = function() {
-        if (_bMultiplayerMode && _oMultiplayer && _iNumSeats > 1) {
+        // Count occupied seats
+        var iOccupied = 0;
+        for (var i = 0; i < _aSeats.length; i++) {
+            if (_aSeats[i] && _aSeats[i].isOccupied()) iOccupied++;
+        }
+        
+        if (_bMultiplayerMode && _oMultiplayer && iOccupied > 1) {
             _oMultiplayer.sendAction('hit');
         } else {
-            // Single player or local game
+            // Single player or solo multiplayer
             this._dealCardToSeat(_iCurrentPlayerTurn);
             this.changeState(STATE_GAME_HITTING);
         }
     };
 
     this.onStand = function() {
-        if (_bMultiplayerMode && _oMultiplayer && _iNumSeats > 1) {
+        // Count occupied seats
+        var iOccupied = 0;
+        for (var i = 0; i < _aSeats.length; i++) {
+            if (_aSeats[i] && _aSeats[i].isOccupied()) iOccupied++;
+        }
+        
+        if (_bMultiplayerMode && _oMultiplayer && iOccupied > 1) {
             _oMultiplayer.sendAction('stand');
         } else {
-            // Single player or local game
+            // Single player or solo multiplayer
             if (_iCurrentPlayerTurn >= 0 && _iCurrentPlayerTurn < _aSeats.length && _aSeats[_iCurrentPlayerTurn]) {
                 _aSeats[_iCurrentPlayerTurn].stand();
             }
