@@ -458,6 +458,7 @@ function CMultiplayerManager(oConfig) {
     this.getPlayerName = function() { return _sPlayerName; };
     this.getTableId = function() { return _sTableId; };
     this.getSeatIndex = function() { return _iSeatIndex; };
+    this.setSeatIndex = function(iIndex) { _iSeatIndex = iIndex; };
     this.isHost = function() { return _bIsHost; };
     this.getGameState = function() { return _oGameState; };
     this.getPlayers = function() { return _oGameState ? _oGameState.players : []; };

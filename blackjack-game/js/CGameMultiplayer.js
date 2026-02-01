@@ -1035,7 +1035,18 @@ function CGameMultiplayer(oData) {
         this.ficheSelected(iFicheValue, iFicheIndex);
     };
 
-    this._onSitDown = function() {
+    this._onSitDown = function(iSeatIndex) {
+        // Mark this seat as occupied by the local player
+        if (iSeatIndex >= 0 && iSeatIndex < _aSeats.length) {
+            _aSeats[iSeatIndex].setOccupied(true);
+            _aSeats[iSeatIndex].setPlayerInfo('Player ' + (iSeatIndex + 1), 'local_player');
+            
+            // Tell the multiplayer manager which seat we're in
+            if (_bMultiplayerMode && _oMultiplayer) {
+                _oMultiplayer.setSeatIndex(iSeatIndex);
+            }
+        }
+        
         // Enable betting when player sits down (both single and multiplayer)
         this.changeState(STATE_GAME_WAITING_FOR_BET);
         _oInterface.enableBetFiches();
