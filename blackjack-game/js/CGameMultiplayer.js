@@ -935,18 +935,26 @@ function CGameMultiplayer(oData) {
     };
 
     this.onDeal = function() {
-        if (_bMultiplayerMode) {
-            if (_oMultiplayer && _oMultiplayer.isHost()) {
-                _oMultiplayer.startBetting();
+        // Check if any seat has a valid bet
+        var bHasBet = false;
+        for (var i = 0; i < _aSeats.length; i++) {
+            if (_aSeats[i] && _aSeats[i].isOccupied() && _aSeats[i].getCurBet() >= _iMinBet) {
+                bHasBet = true;
+                break;
             }
-        } else {
-            // Single player - check bet and start
-            var oSeat = _aSeats[0];
-            if (oSeat.getCurBet() < _iMinBet) {
-                _oMsgBox.show(TEXT_ERROR_MIN_BET);
-                return;
-            }
+        }
+        
+        if (!bHasBet) {
+            _oMsgBox.show(TEXT_ERROR_MIN_BET || "Place a bet first!");
+            return;
+        }
+        
+        // In solo multiplayer or single player, just start dealing
+        if (!_bMultiplayerMode || _iNumSeats === 1) {
             this.changeState(STATE_GAME_DEALING);
+        } else if (_oMultiplayer && _oMultiplayer.isHost()) {
+            // True multiplayer - host starts the round
+            _oMultiplayer.startDealing();
         }
     };
 
