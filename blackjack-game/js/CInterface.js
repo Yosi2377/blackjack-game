@@ -238,6 +238,11 @@ function CInterface(iMoney){
     };
     
     this.refreshCredit = function(iMoney){
+        // Validate money value to prevent NaN display
+        if (typeof iMoney !== 'number' || isNaN(iMoney)) {
+            console.warn('[CInterface] Invalid money value:', iMoney);
+            iMoney = 0;
+        }
         _oMoneyText.refreshText(TEXT_CURRENCY+iMoney.toFixed(2));
     };
     

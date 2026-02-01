@@ -153,6 +153,11 @@ function CGame(oData){
     };
     
     this.setMoney = function(iMoney){
+        // Validate money value to prevent NaN
+        if (typeof iMoney !== 'number' || isNaN(iMoney)) {
+            console.warn('[CGame] Invalid money value:', iMoney);
+            iMoney = TOTAL_MONEY || 1000;
+        }
         _oSeat.setVisibleSitDownButton(false);
         _oSeat.setCredit(iMoney);
         _oInterface.refreshCredit(iMoney);
