@@ -53,13 +53,11 @@ function CGameMultiplayer(oData) {
 
     // Seat positions for 5 players (x, y coordinates)
     var SEAT_POSITIONS = [
-        { x: 300, y: 380 },   // Seat 0 - far left
-        { x: 450, y: 410 },   // Seat 1 - left
-        { x: 580, y: 440 },   // Seat 2 - left-center
-        { x: 720, y: 460 },   // Seat 3 - center
-        { x: 860, y: 440 },   // Seat 4 - right-center
-        { x: 1000, y: 410 },  // Seat 5 - right
-        { x: 1150, y: 380 }   // Seat 6 - far right
+        { x: 450, y: 410 },   // Seat 0 - left
+        { x: 580, y: 440 },   // Seat 1 - left-center
+        { x: 720, y: 460 },   // Seat 2 - center
+        { x: 860, y: 440 },   // Seat 3 - right-center
+        { x: 1000, y: 410 }   // Seat 4 - right
     ];
 
     this._init = function() {
@@ -162,23 +160,19 @@ function CGameMultiplayer(oData) {
 
     this._getSeatPositions = function(iNumSeats) {
         // Return appropriate positions based on number of players
-        // Clamp to max 7 seats
-        iNumSeats = Math.min(iNumSeats, 7);
+        // Clamp to max 5 seats
+        iNumSeats = Math.min(iNumSeats, 5);
         
         switch (iNumSeats) {
             case 1:
-                return [SEAT_POSITIONS[3]]; // Center only
+                return [SEAT_POSITIONS[2]]; // Center only
             case 2:
-                return [SEAT_POSITIONS[2], SEAT_POSITIONS[4]]; // Left and right of center
+                return [SEAT_POSITIONS[1], SEAT_POSITIONS[3]]; // Left and right of center
             case 3:
-                return [SEAT_POSITIONS[2], SEAT_POSITIONS[3], SEAT_POSITIONS[4]];
+                return [SEAT_POSITIONS[1], SEAT_POSITIONS[2], SEAT_POSITIONS[3]];
             case 4:
-                return [SEAT_POSITIONS[1], SEAT_POSITIONS[2], SEAT_POSITIONS[4], SEAT_POSITIONS[5]];
+                return [SEAT_POSITIONS[0], SEAT_POSITIONS[1], SEAT_POSITIONS[3], SEAT_POSITIONS[4]];
             case 5:
-                return [SEAT_POSITIONS[1], SEAT_POSITIONS[2], SEAT_POSITIONS[3], SEAT_POSITIONS[4], SEAT_POSITIONS[5]];
-            case 6:
-                return [SEAT_POSITIONS[0], SEAT_POSITIONS[1], SEAT_POSITIONS[2], SEAT_POSITIONS[4], SEAT_POSITIONS[5], SEAT_POSITIONS[6]];
-            case 7:
             default:
                 return SEAT_POSITIONS;
         }
