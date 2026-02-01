@@ -43,22 +43,35 @@
 - **URL:** https://lquazxoxvrntoocuvdsa.supabase.co
 - **Tables:** game_tables, table_players, game_users
 
-## באג מקלדת (2025-06-30) - ממתין לפתרון
+## באג מקלדת (2025-06-30 → 2026-02-01) - תוקן חלקית ✅
 
-### הבעיה
+### הבעיה המקורית
 לחיצת מקלדת גורמת למסך שחור. הסיבה: iframe resize ל-1x600 אחרי keyboard event.
 
-### תיקון שנעשה (ממתין ל-Vercel cache)
-**ctl_utils.js** - זיהוי iframe וכפיית גודל קבוע:
-```javascript
-var bInIframe = (window.self !== window.top);
-if (bInIframe) { w = 800; h = 600; }
-```
+### תיקונים שנעשו
+1. **ctl_utils.js** - נעילת גודל iframe:
+   - זיהוי iframe וכפיית גודל קבוע (785x600)
+   - מניעת resize לאחר LOCK ראשוני
+   
+2. **main.css** - z-index לcanvas + הסתרת check-fonts
 
-### סטטוס
+3. **index_multiplayer.html** - force repaint אחרי keyboard:
+   - s_oStage.update()
+   - opacity toggle trick
+
+4. **Arcade.tsx** - 
+   - preventDefault על keyboard events
+   - backgroundColor ירוק ל-iframe
+
+### סטטוס נוכחי
 - ✅ עכבר עובד מצוין
-- ❌ מקלדת עדיין שבורה (Vercel CDN cache)
-- צריך: Redeploy ב-Vercel dashboard או לחכות לcache
+- ✅ מקלדת עובדת (הפקודות מתקבלות)
+- ⚠️ יש flicker למסך שחור לכמה שניות אחרי keyboard event
+- ⚠️ המשחק ממשיך לרוץ ברקע וחוזר
+
+### מה נשאר
+- לחקור את הflicker - ייתכן בעיית compositing של canvas ב-iframe
+- אפשרות: להוסיף CSS transform: translateZ(0) לאלץ GPU layer
 
 ## הערות
 - המשחק משתמש ב-CreateJS לרינדור canvas
