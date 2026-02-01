@@ -43,6 +43,23 @@
 - **URL:** https://lquazxoxvrntoocuvdsa.supabase.co
 - **Tables:** game_tables, table_players, game_users
 
+## באג מקלדת (2025-06-30) - ממתין לפתרון
+
+### הבעיה
+לחיצת מקלדת גורמת למסך שחור. הסיבה: iframe resize ל-1x600 אחרי keyboard event.
+
+### תיקון שנעשה (ממתין ל-Vercel cache)
+**ctl_utils.js** - זיהוי iframe וכפיית גודל קבוע:
+```javascript
+var bInIframe = (window.self !== window.top);
+if (bInIframe) { w = 800; h = 600; }
+```
+
+### סטטוס
+- ✅ עכבר עובד מצוין
+- ❌ מקלדת עדיין שבורה (Vercel CDN cache)
+- צריך: Redeploy ב-Vercel dashboard או לחכות לcache
+
 ## הערות
 - המשחק משתמש ב-CreateJS לרינדור canvas
 - ⚠️ יוסי רוצה **רק מולטיפלייר** - אסור לגעת בסינגל פלייר בכלל!
