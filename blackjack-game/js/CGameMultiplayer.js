@@ -83,12 +83,24 @@ function CGameMultiplayer(oData) {
         _aPlayerBets = [];
         this._createSeats(_iNumSeats);
         
-        // In single player or quick start mode, auto-occupy the first seat
-        // MODIFIED: Allow solo play in multiplayer - don't wait for other players
-        if (!_bMultiplayerMode || _iNumSeats === 1) {
-            _aSeats[0].setOccupied(true);
-            _aSeats[0].setPlayerInfo('Player 1', 'local_player');
+        // Auto-occupy seat based on URL params or default to seat 0
+        var iMySeat = oData.seat_number !== undefined ? (oData.seat_number - 1) : 0;  // Convert 1-based to 0-based
+        if (iMySeat < 0 || iMySeat >= _iNumSeats) iMySeat = 0;
+        
+        var sPlayerName = oData.player_name || 'Player ' + (iMySeat + 1);
+        
+        // Occupy the seat
+        _aSeats[iMySeat].setOccupied(true);
+        _aSeats[iMySeat].setPlayerInfo(sPlayerName, 'local_player');
+        _aSeats[iMySeat].showPlayerAvatar(true);  // Show "YOU" indicator
+        
+        // Hide ALL other "SIT DOWN" buttons - in solo mode, only you can play
+        for (var i = 0; i < _aSeats.length; i++) {
+            if (i !== iMySeat) {
+                _aSeats[i].setVisibleSitDownButton(false);
+            }
         }
+        
         // Always allow solo play - no waiting for players
         _bWaitingForPlayers = false;
 
@@ -1091,6 +1103,16 @@ function CGameMultiplayer(oData) {
             _aSeats[iSeatIndex].setOccupied(true);
             _aSeats[iSeatIndex].setPlayerInfo('Player ' + (iSeatIndex + 1), 'local_player');
             
+            // HIDE ALL OTHER "SIT DOWN" BUTTONS - player can only sit in one seat
+            for (var i = 0; i < _aSeats.length; i++) {
+                if (i !== iSeatIndex) {
+                    _aSeats[i].setVisibleSitDownButton(false);
+                }
+            }
+            
+            // Show avatar/indicator on the player's seat
+            _aSeats[iSeatIndex].showPlayerAvatar(true);
+            
             // Tell the multiplayer manager which seat we're in
             if (_bMultiplayerMode && _oMultiplayer) {
                 _oMultiplayer.setSeatIndex(iSeatIndex);
@@ -1101,6 +1123,7 @@ function CGameMultiplayer(oData) {
         this.changeState(STATE_GAME_WAITING_FOR_BET);
         if (_oInterface) {
             _oInterface.enableBetFiches();
+            _oInterface.displayMsg(TEXT_DISPLAY_MSG_WAITING_BET || "Place your bet!");
         }
         
         // In multiplayer, also trigger the betting phase

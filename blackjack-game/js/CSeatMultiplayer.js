@@ -35,6 +35,8 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
     
     var _oMainFichesController;
     var _oSplitFichesController;
+    var _oPlayerAvatar;
+    var _oYouIndicator;
     
     var _aCbCompleted;
     var _aCbOwner;
@@ -131,6 +133,22 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
         _oArrowCurPlayer.x = 30;
         _oArrowCurPlayer.y = -20;
         _oGroup.addChild(_oArrowCurPlayer);
+        
+        // Player avatar (emoji indicator) - shows which seat is YOURS
+        _oPlayerAvatar = new createjs.Text("👤", "40px Arial", "#ffffff");
+        _oPlayerAvatar.x = 55;
+        _oPlayerAvatar.y = 200;
+        _oPlayerAvatar.textAlign = "center";
+        _oPlayerAvatar.visible = false;
+        _oGroup.addChild(_oPlayerAvatar);
+        
+        // "YOU" indicator text
+        _oYouIndicator = new createjs.Text("◀ YOU", "bold 16px Arial", "#00ff00");
+        _oYouIndicator.shadow = new createjs.Shadow("#000000", 2, 2, 2);
+        _oYouIndicator.x = 120;
+        _oYouIndicator.y = 255;
+        _oYouIndicator.visible = false;
+        _oGroup.addChild(_oYouIndicator);
 
         s_oStage.addChild(_oGroup);
         
@@ -568,6 +586,23 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
     
     this.setVisibleSitDownButton = function(bVisible) {
         _oSitDownBut.setVisible(bVisible);
+    };
+    
+    this.showPlayerAvatar = function(bShow) {
+        _oPlayerAvatar.visible = bShow;
+        _oYouIndicator.visible = bShow;
+        
+        if (bShow) {
+            // Pulse animation for the avatar
+            createjs.Tween.removeTweens(_oPlayerAvatar);
+            createjs.Tween.get(_oPlayerAvatar, { loop: true })
+                .to({ scaleX: 1.1, scaleY: 1.1 }, 500)
+                .to({ scaleX: 1, scaleY: 1 }, 500);
+        } else {
+            createjs.Tween.removeTweens(_oPlayerAvatar);
+            _oPlayerAvatar.scaleX = 1;
+            _oPlayerAvatar.scaleY = 1;
+        }
     };
     
     this._onSitDown = function() {
