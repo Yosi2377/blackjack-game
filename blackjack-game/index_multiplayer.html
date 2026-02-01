@@ -330,7 +330,7 @@
                     document.getElementById('lobby-overlay').classList.add('hidden');
                     
                     // Start the game with multiplayer settings
-                    var numPlayers = parseInt(players) || 7;
+                    var numPlayers = Math.min(parseInt(players) || 5, 5);  // Max 5 seats
                     initGame(true, numPlayers, tableId, parseInt(seat), user);
                     return;
                 }
