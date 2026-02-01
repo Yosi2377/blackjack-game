@@ -947,19 +947,33 @@ function CGameMultiplayer(oData) {
     };
 
     this.onDeal = function() {
+        console.log('[Game] onDeal called');
+        console.log('[Game] _aSeats length:', _aSeats ? _aSeats.length : 'undefined');
+        console.log('[Game] _iMinBet:', _iMinBet);
+        
         // Check if any seat has a valid bet
         var bHasBet = false;
         for (var i = 0; i < _aSeats.length; i++) {
+            var seatInfo = _aSeats[i] ? {
+                occupied: _aSeats[i].isOccupied(),
+                bet: _aSeats[i].getCurBet()
+            } : null;
+            console.log('[Game] Seat', i, ':', JSON.stringify(seatInfo));
+            
             if (_aSeats[i] && _aSeats[i].isOccupied() && _aSeats[i].getCurBet() >= _iMinBet) {
                 bHasBet = true;
+                console.log('[Game] Valid bet found at seat', i);
                 break;
             }
         }
         
         if (!bHasBet) {
+            console.log('[Game] No valid bet found! Showing error message');
             _oMsgBox.show(TEXT_ERROR_MIN_BET || "Place a bet first!");
             return;
         }
+        
+        console.log('[Game] Proceeding to deal');
         
         // Count occupied seats
         var iOccupied = 0;
