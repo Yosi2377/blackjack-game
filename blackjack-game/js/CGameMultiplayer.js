@@ -480,6 +480,9 @@ function CGameMultiplayer(oData) {
             _aDealerCards[1].showCard();
         }
         
+        // Display the dealer's current sum (from the initial 2 cards dealt)
+        _oInterface.refreshDealerCardValue(_iDealerValueCard);
+        
         _oInterface.displayMsg(TEXT_DISPLAY_MSG_DEALER_TURN);
         
         // Dealer hits until 17
