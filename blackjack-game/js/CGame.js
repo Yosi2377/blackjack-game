@@ -594,6 +594,12 @@ function CGame(oData){
     };
     
     this.ficheSelected = function(iFicheValue,iFicheIndex){
+        // Only allow betting during the betting phase
+        if (_iState !== STATE_GAME_WAITING_FOR_BET && _iState !== -1) {
+            console.log('[CGame] Betting not allowed in state:', _iState);
+            return;
+        }
+        
         var iCurBet=_oSeat.getCurBet();
         
         if(iFicheValue > _oSeat.getCredit()){

@@ -1034,6 +1034,12 @@ function CGameMultiplayer(oData) {
 
     // Original bet handling for single player
     this.ficheSelected = function(iFicheValue, iFicheIndex) {
+        // Only allow betting during the betting phase
+        if (_iState !== STATE_GAME_WAITING_FOR_BET && _iState !== -1) {
+            console.log('[CGameMultiplayer] Betting not allowed in state:', _iState);
+            return;
+        }
+        
         // Validate parameters
         if (typeof iFicheValue !== 'number' || isNaN(iFicheValue) || iFicheValue <= 0) {
             console.warn('[Game] Invalid fiche value:', iFicheValue);

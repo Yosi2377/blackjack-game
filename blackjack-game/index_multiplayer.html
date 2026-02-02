@@ -695,7 +695,6 @@
                 if (data && data.type === 'KEYBOARD_EVENT') {
                     var keyData = data.data;
                     var key = keyData.key.toLowerCase();
-                    console.log('[Keyboard Bridge] Key from parent:', key);
                     
                     // Check if game and interface exist
                     if (typeof s_oGame === 'undefined' || typeof s_oInterface === 'undefined') {
@@ -703,7 +702,33 @@
                         return;
                     }
                     
+                    // Get current game state - only allow actions in appropriate states
+                    var gameState = s_oGame.getState();
+                    var STATE_WAITING_FOR_BET = 0;  // STATE_GAME_WAITING_FOR_BET
+                    var STATE_DEALING = 1;          // STATE_GAME_DEALING (no actions allowed)
+                    var STATE_HITTING = 2;          // STATE_GAME_HITTING (no actions allowed)
+                    var STATE_SHOW_WINNER = 5;      // STATE_GAME_SHOW_WINNER (no actions allowed)
+                    
+                    console.log('[Keyboard Bridge] Key:', key, '| Game state:', gameState);
+                    
                     try {
+                        // Betting keys (1-6, c, r) - only during betting phase
+                        if (['1','2','3','4','5','6','c','r'].indexOf(key) !== -1) {
+                            if (gameState !== STATE_WAITING_FOR_BET && gameState !== -1) {
+                                console.log('[Keyboard Bridge] Betting not allowed in state:', gameState);
+                                return;
+                            }
+                        }
+                        
+                        // Action keys (d=deal, h=hit, s=stand, o=double, p=split) - check if interface allows
+                        // These buttons have their own enable/disable logic, but extra safety check
+                        if (['d','h','s','o','p'].indexOf(key) !== -1) {
+                            if (gameState === STATE_SHOW_WINNER || gameState === STATE_DEALING || gameState === STATE_HITTING) {
+                                console.log('[Keyboard Bridge] Actions not allowed in state:', gameState);
+                                return;
+                            }
+                        }
+                        
                         switch(key) {
                             case '1': s_oGame.ficheSelected(0.1, 0); console.log('[Keyboard Bridge] Selected chip 0.1'); break;
                             case '2': s_oGame.ficheSelected(1, 1); console.log('[Keyboard Bridge] Selected chip 1'); break;
