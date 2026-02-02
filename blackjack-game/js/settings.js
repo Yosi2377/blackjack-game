@@ -21,6 +21,7 @@ var STATE_GAME_HITTING            = 2;
 var STATE_GAME_SPLIT              = 3;
 var STATE_GAME_FINALIZE           = 4;
 var STATE_GAME_SHOW_WINNER        = 5;
+var STATE_GAME_PLAYER_TURN        = 6;
 
 var STATE_CARD_DEALING  = 0;
 var STATE_CARD_SPLIT    = 1;
