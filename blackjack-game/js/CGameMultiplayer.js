@@ -522,17 +522,21 @@ function CGameMultiplayer(oData) {
                 winAmount: 0
             };
             
+            // FIX: Use getBetForHand(0) instead of getCurBet() because after stand,
+            // _iCurHand becomes -1 and getCurBet() returns 0
+            var iBet = oSeat.getBetForHand(0);
+            
             if (iPlayerValue > 21) {
                 oResult.result = 'bust';
             } else if (_iDealerValueCard > 21) {
                 oResult.result = 'win';
-                oResult.winAmount = oSeat.getCurBet() * 2;
+                oResult.winAmount = iBet * 2;
             } else if (iPlayerValue > _iDealerValueCard) {
                 oResult.result = 'win';
-                oResult.winAmount = oSeat.getCurBet() * 2;
+                oResult.winAmount = iBet * 2;
             } else if (iPlayerValue === _iDealerValueCard) {
                 oResult.result = 'push';
-                oResult.winAmount = oSeat.getCurBet();
+                oResult.winAmount = iBet;
             } else {
                 oResult.result = 'lose';
             }
@@ -540,7 +544,7 @@ function CGameMultiplayer(oData) {
             // Check for blackjack
             if (iPlayerValue === 21 && oSeat.getNumCardsForHand(0) === 2) {
                 oResult.result = 'blackjack';
-                oResult.winAmount = oSeat.getCurBet() * 2.5;
+                oResult.winAmount = iBet * 2.5;
             }
             
             aResults.push(oResult);
