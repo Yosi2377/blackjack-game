@@ -309,7 +309,21 @@ function CGameMultiplayer(oData) {
         if (_oMultiplayer && _oMultiplayer.isHost()) {
             return;
         }
-        // Show results for all players (clients only)
+        
+        // FIX: In single player mode, _checkAllWinners already handled results
+        // Don't show results twice to prevent credit inflation
+        var iOccupiedSeats = 0;
+        for (var i = 0; i < _aSeats.length; i++) {
+            if (_aSeats[i] && _aSeats[i].isOccupied()) iOccupiedSeats++;
+        }
+        
+        // Only show results if this is truly multiplayer (more than 1 player)
+        if (iOccupiedSeats <= 1) {
+            console.log('[CGameMultiplayer] Skipping _onMPRoundEnd in single player mode to prevent double credit addition');
+            return;
+        }
+        
+        // Show results for all players (clients only in true multiplayer)
         this._showAllResults(oData.results);
     };
 
@@ -964,6 +978,15 @@ function CGameMultiplayer(oData) {
             }
             _aSeats[j].clearText();
         }
+        
+        // BUG FIX #1: Ensure complete cleanup of card containers after animation
+        // Add extra cleanup after a short delay to ensure all cards are fully removed
+        setTimeout(function() {
+            console.log('[CGameMultiplayer] Extra cleanup: removing any lingering cards');
+            if (_oCardContainer) {
+                _oCardContainer.removeAllChildren();
+            }
+        }, 500);
 
         _oInterface.clearDealerText();
         _iTimeElaps = 0;

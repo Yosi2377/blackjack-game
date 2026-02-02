@@ -503,7 +503,8 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
             });
         }
 
-        $(s_oMain).trigger("save_score", [_iCredit]);
+        // FIX: Remove duplicate save_score - CGameMultiplayer already handles balance sync
+        // $(s_oMain).trigger("save_score", [_iCredit]);
     };
     
     this.endWinAnim = function() {
