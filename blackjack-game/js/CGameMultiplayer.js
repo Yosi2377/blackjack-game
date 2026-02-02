@@ -472,6 +472,9 @@ function CGameMultiplayer(oData) {
         _bPlayerTurn = false;
         _oInterface.disableButtons();
         
+        // Transition to finalize state - dealer's turn
+        this.changeState(STATE_GAME_FINALIZE);
+        
         // Show dealer's hidden card
         if (_aDealerCards.length > 1) {
             _aDealerCards[1].showCard();
@@ -493,6 +496,9 @@ function CGameMultiplayer(oData) {
 
     this._checkAllWinners = function() {
         var aResults = [];
+        
+        // Transition to show winner state
+        this.changeState(STATE_GAME_SHOW_WINNER);
         
         for (var i = 0; i < _aSeats.length; i++) {
             if (!_aSeats[i].isOccupied()) continue;
@@ -537,6 +543,14 @@ function CGameMultiplayer(oData) {
         if (_oMultiplayer && _oMultiplayer.isHost()) {
             _oMultiplayer.endRound(aResults);
         }
+        
+        // SYNC BALANCE TO PARENT - Trigger save_score after round results
+        // Small delay to ensure credits are updated
+        setTimeout(function() {
+            var iCurrentCredits = s_oGame.getMoney();
+            console.log('[CGameMultiplayer] Round ended, syncing balance:', iCurrentCredits);
+            $(s_oMain).trigger("save_score", [iCurrentCredits]);
+        }, 500);
     };
 
     this._showSeatResult = function(iSeat, oResult) {
@@ -808,6 +822,9 @@ function CGameMultiplayer(oData) {
             return;
         }
 
+        // Transition to player turn state - dealing is complete
+        this.changeState(STATE_GAME_PLAYER_TURN);
+
         // Refresh all card values
         for (var i = 0; i < _aSeats.length; i++) {
             if (_aSeats[i] && _aSeats[i].isOccupied()) {
@@ -933,6 +950,11 @@ function CGameMultiplayer(oData) {
         _iTimeElaps = 0;
         
         playSound("fiche_collect", 1, false);
+        
+        // SYNC BALANCE TO PARENT before starting new round
+        var iCurrentCredits = s_oGame.getMoney();
+        console.log('[CGameMultiplayer] Hand ended, syncing balance:', iCurrentCredits);
+        $(s_oMain).trigger("save_score", [iCurrentCredits]);
 
         // Start new round after delay
         setTimeout(function() {
@@ -1277,6 +1299,18 @@ function CGameMultiplayer(oData) {
                 this._updateDealing();
                 break;
             case STATE_GAME_HITTING:
+                this._updateHitting();
+                break;
+            case STATE_GAME_PLAYER_TURN:
+                // Waiting for player input - update any card animations in progress
+                this._updateHitting();
+                break;
+            case STATE_GAME_FINALIZE:
+                // Dealer's turn - update card animations
+                this._updateHitting();
+                break;
+            case STATE_GAME_SHOW_WINNER:
+                // Showing results - update any remaining animations
                 this._updateHitting();
                 break;
         }

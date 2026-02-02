@@ -905,6 +905,12 @@ function CGame(oData){
         _iTimeElaps+=s_iTimeElaps;
         if(_iTimeElaps>TIME_END_HAND){
             _iTimeElaps=0;
+            
+            // SYNC BALANCE TO PARENT before starting new round
+            var iCurrentCredits = _oSeat.getCredit();
+            console.log('[CGame] Round ended, syncing balance:', iCurrentCredits);
+            $(s_oMain).trigger("save_score", [iCurrentCredits]);
+            
             this.reset(false);
             _oInterface.reset();
 
