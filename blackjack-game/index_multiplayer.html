@@ -722,9 +722,11 @@
                         
                         // Action keys (d=deal, h=hit, s=stand, o=double, p=split) - check if interface allows
                         // These buttons have their own enable/disable logic, but extra safety check
+                        // Note: Only block during STATE_SHOW_WINNER. The game uses STATE_DEALING (1) even while
+                        // waiting for player action after initial deal, so we can't block those states.
                         if (['d','h','s','o','p'].indexOf(key) !== -1) {
-                            if (gameState === STATE_SHOW_WINNER || gameState === STATE_DEALING || gameState === STATE_HITTING) {
-                                console.log('[Keyboard Bridge] Actions not allowed in state:', gameState);
+                            if (gameState === STATE_SHOW_WINNER) {
+                                console.log('[Keyboard Bridge] Actions not allowed in result state');
                                 return;
                             }
                         }
