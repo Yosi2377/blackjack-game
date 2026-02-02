@@ -304,7 +304,12 @@ function CGameMultiplayer(oData) {
     };
 
     this._onMPRoundEnd = function(oData) {
-        // Show results for all players
+        // Host already showed results in _checkAllWinners - only clients need to show them
+        // This prevents double credit addition (the bug where every keypress adds money)
+        if (_oMultiplayer && _oMultiplayer.isHost()) {
+            return;
+        }
+        // Show results for all players (clients only)
         this._showAllResults(oData.results);
     };
 
