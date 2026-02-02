@@ -50,6 +50,7 @@ function CGameMultiplayer(oData) {
     var _bMultiplayerMode;
     var _bWaitingForPlayers;
     var _bAllBetsPlaced;
+    var _bWinnersChecked = false;  // BUG FIX: Prevent duplicate winner checking
 
     // Seat positions for 5 players (x, y coordinates)
     var SEAT_POSITIONS = [
@@ -517,6 +518,13 @@ function CGameMultiplayer(oData) {
     };
 
     this._checkAllWinners = function() {
+        // BUG FIX: Prevent duplicate winner checking which causes credit inflation
+        if (_bWinnersChecked) {
+            console.log('[CGameMultiplayer] _checkAllWinners already called this round - skipping');
+            return;
+        }
+        _bWinnersChecked = true;
+        
         var aResults = [];
         
         // Transition to show winner state
@@ -659,6 +667,7 @@ function CGameMultiplayer(oData) {
         _iCurFichesToWait = 0;
         _iCurrentPlayerTurn = 0;
         _bAllBetsPlaced = false;
+        _bWinnersChecked = false;  // BUG FIX: Reset flag for new round
 
         for (var i = 0; i < _aSeats.length; i++) {
             _aSeats[i].reset();
@@ -1089,10 +1098,12 @@ function CGameMultiplayer(oData) {
             _oMultiplayer.sendAction('stand');
         } else {
             // Single player or solo multiplayer
+            // BUG FIX: Only call stand() - it fires PASS_TURN event which triggers _onPlayerPassTurn
+            // Do NOT call _onPlayerPassTurn directly - that causes double execution and credit inflation!
             if (_iCurrentPlayerTurn >= 0 && _iCurrentPlayerTurn < _aSeats.length && _aSeats[_iCurrentPlayerTurn]) {
                 _aSeats[_iCurrentPlayerTurn].stand();
             }
-            s_oGame._onPlayerPassTurn();
+            // REMOVED: s_oGame._onPlayerPassTurn(); - This was causing duplicate calls!
         }
     };
 
