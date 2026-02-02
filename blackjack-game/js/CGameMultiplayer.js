@@ -551,6 +551,13 @@ function CGameMultiplayer(oData) {
             console.log('[CGameMultiplayer] Round ended, syncing balance:', iCurrentCredits);
             $(s_oMain).trigger("save_score", [iCurrentCredits]);
         }, 500);
+        
+        // BUG FIX: Trigger end of hand to reset for new round
+        // Without this, the game stays stuck on "DEALER TURN" state
+        setTimeout(function() {
+            console.log('[CGameMultiplayer] Triggering end of hand to reset game');
+            s_oGame._onEndHand();
+        }, 2000);  // 2 second delay to show results before clearing
     };
 
     this._showSeatResult = function(iSeat, oResult) {
@@ -962,8 +969,16 @@ function CGameMultiplayer(oData) {
             
             if (_bMultiplayerMode && _oMultiplayer && _oMultiplayer.isHost()) {
                 _oMultiplayer.startBetting();
-            } else if (!_bMultiplayerMode) {
+            } else {
+                // BUG FIX: Always transition to betting state for:
+                // - Single player mode (!_bMultiplayerMode)
+                // - Solo multiplayer (no _oMultiplayer or not host)
+                console.log('[CGameMultiplayer] Transitioning to betting state');
                 s_oGame.changeState(STATE_GAME_WAITING_FOR_BET);
+                if (_oInterface) {
+                    _oInterface.enableBetFiches();
+                    _oInterface.displayMsg(TEXT_DISPLAY_MSG_WAITING_BET || "Place your bet!");
+                }
             }
         }, TIME_END_HAND);
     };
