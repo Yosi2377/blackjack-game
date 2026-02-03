@@ -175,6 +175,7 @@ function CInterface(iMoney){
     
     this.reset = function(){
         this.disableButtons();
+        this.clearDealerText();
     };
     
     this.enableBetFiches = function(){
