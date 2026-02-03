@@ -208,6 +208,17 @@ function CGameMultiplayer(oData) {
                 this.changeState(STATE_GAME_WAITING_FOR_BET);
             }
         }
+        
+        // Notify parent window that game is ready with initial balance
+        if (window.parent !== window) {
+            var iInitialBalance = _aSeats[0].getCredit();
+            window.parent.postMessage({
+                type: 'GAME_READY',
+                balance: iInitialBalance,
+                timestamp: Date.now()
+            }, '*');
+            console.log('[PostMessage] Game ready, initial balance:', iInitialBalance);
+        }
     };
 
     this._createSeats = function(iNumSeats) {
@@ -1071,6 +1082,9 @@ function CGameMultiplayer(oData) {
         var iCurrentCredits = s_oGame.getMoney();
         console.log('[CGameMultiplayer] Hand ended, syncing balance:', iCurrentCredits);
         $(s_oMain).trigger("save_score", [iCurrentCredits]);
+        
+        // Also sync via postMessage for iframe embedding
+        CPostMessageBridge.sendBalanceUpdate(iCurrentCredits);
 
         // Start new round after delay
         setTimeout(function() {
@@ -1231,6 +1245,9 @@ function CGameMultiplayer(oData) {
             _oInterface.refreshCredit(oSeat.getCredit());
             _oInterface.enable(true, false, false, false, false);
             
+            // Sync balance after bet placed
+            CPostMessageBridge.sendBalanceUpdate(oSeat.getCredit());
+            
             // Notify multiplayer
             if (_oMultiplayer) {
                 _oMultiplayer.placeBet(iCurBet);
@@ -1257,6 +1274,9 @@ function CGameMultiplayer(oData) {
                 
                 _oInterface.enable(true, false, false, false, false);
                 _oInterface.refreshCredit(oSeat.getCredit());
+                
+                // Sync balance after bet placed
+                CPostMessageBridge.sendBalanceUpdate(oSeat.getCredit());
             }
         }
     };
@@ -1350,8 +1370,22 @@ function CGameMultiplayer(oData) {
 
     this.onExit = function() {
         this.unload();
-        $(s_oMain).trigger("save_score", [_aSeats[0].getCredit()]);
+        var iCredits = _aSeats[0].getCredit();
+        $(s_oMain).trigger("save_score", [iCredits]);
         $(s_oMain).trigger("end_session");
+        
+        // Final balance sync via postMessage
+        CPostMessageBridge.sendBalanceUpdate(iCredits);
+        
+        // Notify parent that game session ended
+        if (window.parent !== window) {
+            window.parent.postMessage({
+                type: 'GAME_SESSION_END',
+                balance: iCredits,
+                timestamp: Date.now()
+            }, '*');
+        }
+        
         s_oMain.gotoMenu();
     };
 
