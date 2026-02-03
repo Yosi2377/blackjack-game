@@ -2,6 +2,63 @@
  * CGameMultiplayer - Extended CGame with multiplayer support
  * Supports 1-5 players at positioned seats around the table
  */
+
+// PostMessage communication helper for iframe embedding
+var CPostMessageBridge = {
+    // Send balance update to parent window
+    sendBalanceUpdate: function(iBalance) {
+        if (window.parent !== window) {
+            try {
+                window.parent.postMessage({
+                    type: 'BALANCE_UPDATE',
+                    balance: iBalance,
+                    timestamp: Date.now()
+                }, '*');
+                console.log('[PostMessage] Sent BALANCE_UPDATE:', iBalance);
+            } catch (e) {
+                console.warn('[PostMessage] Failed to send:', e);
+            }
+        }
+    },
+    
+    // Initialize listener for incoming messages
+    init: function() {
+        window.addEventListener('message', function(event) {
+            // Handle SET_BALANCE from parent
+            if (event.data && event.data.type === 'SET_BALANCE') {
+                var iNewBalance = event.data.balance;
+                console.log('[PostMessage] Received SET_BALANCE:', iNewBalance);
+                
+                if (typeof iNewBalance === 'number' && !isNaN(iNewBalance) && s_oGame) {
+                    s_oGame.setMoney(iNewBalance);
+                    console.log('[PostMessage] Balance set to:', iNewBalance);
+                    
+                    // Acknowledge the balance was set
+                    if (window.parent !== window) {
+                        window.parent.postMessage({
+                            type: 'BALANCE_UPDATED',
+                            balance: iNewBalance,
+                            timestamp: Date.now()
+                        }, '*');
+                    }
+                }
+            }
+            
+            // Handle GET_BALANCE request from parent
+            if (event.data && event.data.type === 'GET_BALANCE') {
+                console.log('[PostMessage] Received GET_BALANCE request');
+                if (s_oGame) {
+                    CPostMessageBridge.sendBalanceUpdate(s_oGame.getMoney());
+                }
+            }
+        });
+        console.log('[PostMessage] Bridge initialized - listening for parent messages');
+    }
+};
+
+// Initialize the bridge when this file loads
+CPostMessageBridge.init();
+
 function CGameMultiplayer(oData) {
     var _bUpdate = false;
     var _bPlayerTurn;
@@ -628,6 +685,9 @@ function CGameMultiplayer(oData) {
         if (_oInterface) {
             _oInterface.refreshCredit(s_oGame.getMoney());
         }
+        
+        // Sync balance to parent window via postMessage
+        CPostMessageBridge.sendBalanceUpdate(s_oGame.getMoney());
     };
 
     this._showAllResults = function(aResults) {
@@ -1319,6 +1379,9 @@ function CGameMultiplayer(oData) {
             _aSeats[0].setCredit(iMoney);
         }
         _oInterface.refreshCredit(iMoney);
+        
+        // Sync to parent window via postMessage
+        CPostMessageBridge.sendBalanceUpdate(iMoney);
     };
 
     this._updateWaitingBet = function() {

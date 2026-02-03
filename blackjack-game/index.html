@@ -55,19 +55,30 @@
             // Listen for messages from parent window
             window.addEventListener('message', function(event) {
                 var data = event.data;
+                console.log('[Blackjack] Received postMessage:', data);
                 if (data && data.type === 'SET_CREDITS') {
                     // Update game credits from parent
+                    console.log('[Blackjack] Setting credits from parent:', data.data.credits);
                     if (typeof s_oGame !== 'undefined' && s_oGame !== null) {
                         s_oGame.setMoney(data.data.credits);
                         lastSavedScore = data.data.credits;
                     }
+                } else if (data && data.type === 'GET_BALANCE') {
+                    // Parent is requesting current balance
+                    if (typeof s_oGame !== 'undefined' && s_oGame !== null) {
+                        var currentBalance = s_oGame.getMoney();
+                        window.parent.postMessage({ type: 'BALANCE_UPDATE', data: { balance: currentBalance } }, parentOrigin);
+                    }
                 }
             });
             
-            // Notify parent that game is ready
+            // Notify parent that game is ready and request current balance
             function notifyParentReady() {
                 if (window.parent !== window) {
+                    console.log('[Blackjack] Notifying parent: GAME_READY');
                     window.parent.postMessage({ type: 'GAME_READY' }, parentOrigin);
+                    // Also request the latest balance from parent
+                    window.parent.postMessage({ type: 'REQUEST_BALANCE' }, parentOrigin);
                 }
             }
             
@@ -87,12 +98,20 @@
             }
             
             $(document).ready(function(){
+                     // Parse URL parameters to get initial credits
+                     var urlParams = new URLSearchParams(window.location.search);
+                     var initialCredits = parseInt(urlParams.get('credits'), 10);
+                     if (isNaN(initialCredits) || initialCredits <= 0) {
+                         initialCredits = 1000; // Default fallback
+                     }
+                     console.log('[Blackjack] Initial credits from URL:', initialCredits);
+                     
                      var oMain = new CMain({
                                     win_occurrence: 40,          //WIN OCCURRENCE PERCENTAGE. VALUES BETWEEN 0-100
                                     min_bet: 1,                  //MIN BET PLAYABLE BY USER. DEFAULT IS 0.1$
                                     max_bet: 300,                //MAX BET PLAYABLE BY USER. 
                                     bet_time: 10000,             //WAITING TIME FOR PLAYER BETTING
-                                    money: 1000,                 //STARING CREDIT FOR THE USER
+                                    money: initialCredits,       //STARTING CREDIT FROM URL OR DEFAULT 1000
                                     blackjack_payout: 1.5,       //PAYOUT WHEN USER WINS WITH BLACKJACK (DEFAULT IS 3 TO 2). BLACKJACK OCCURS WHEN USER GET 21 WITH FIRST 2 CARDS
                                     game_cash: 500,              //GAME CASH AVAILABLE WHEN GAME STARTS
                                     show_credits:true,           //ENABLE/DISABLE CREDITS BUTTON IN THE MAIN SCREEN
