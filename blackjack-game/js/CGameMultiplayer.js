@@ -975,8 +975,14 @@ function CGameMultiplayer(oData) {
 
         this._highlightCurrentPlayer();
         
-        // Enable controls for current player (in single player or if it's our turn)
-        if (!_bMultiplayerMode || _iNumSeats === 1 || (_oMultiplayer && _oMultiplayer.isMyTurn())) {
+        // Count occupied seats to check if playing solo
+        var iOccupiedCount = 0;
+        for (var j = 0; j < _aSeats.length; j++) {
+            if (_aSeats[j] && _aSeats[j].isOccupied()) iOccupiedCount++;
+        }
+        
+        // Enable controls for current player (in single player, solo multiplayer, or if it's our turn)
+        if (!_bMultiplayerMode || iOccupiedCount <= 1 || (_oMultiplayer && _oMultiplayer.isMyTurn())) {
             var bDouble = this._canDouble(_iCurrentPlayerTurn);
             _oInterface.enable(false, true, true, bDouble, false);
         }
@@ -1003,7 +1009,13 @@ function CGameMultiplayer(oData) {
         } else {
             s_oGame._highlightCurrentPlayer();
             
-            if (!_bMultiplayerMode || (_oMultiplayer && _oMultiplayer.isMyTurn())) {
+            // Count occupied seats to check if playing solo
+            var iOccupiedCount = 0;
+            for (var j = 0; j < _aSeats.length; j++) {
+                if (_aSeats[j] && _aSeats[j].isOccupied()) iOccupiedCount++;
+            }
+            
+            if (!_bMultiplayerMode || iOccupiedCount <= 1 || (_oMultiplayer && _oMultiplayer.isMyTurn())) {
                 var bDouble = s_oGame._canDouble(_iCurrentPlayerTurn);
                 _oInterface.enable(false, true, true, bDouble, false);
             }
