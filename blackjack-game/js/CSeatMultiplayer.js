@@ -264,9 +264,16 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
         return _iSeatIndex;
     };
     
-    this.setOccupied = function(bOccupied) {
+    this.setOccupied = function(bOccupied, bShowSitDownButton) {
         _bOccupied = bOccupied;
-        _oSitDownBut.setVisible(!bOccupied);
+        // Only show/hide sit-down button if explicitly requested
+        // Default behavior: hide when occupied, don't auto-show when empty
+        if (bShowSitDownButton !== undefined) {
+            _oSitDownBut.setVisible(bShowSitDownButton);
+        } else if (bOccupied) {
+            _oSitDownBut.setVisible(false);
+        }
+        // Note: removed automatic show when !bOccupied - let CGameMultiplayer control this
         
         if (!bOccupied) {
             this.clearPlayerInfo();
