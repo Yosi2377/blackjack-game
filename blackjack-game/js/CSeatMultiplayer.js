@@ -134,19 +134,22 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
         _oArrowCurPlayer.y = -20;
         _oGroup.addChild(_oArrowCurPlayer);
         
-        // Player avatar (emoji indicator) - shows which seat is YOURS
-        _oPlayerAvatar = new createjs.Text("👤", "40px Arial", "#ffffff");
+        // Player avatar - colored circle indicator showing which seat is YOURS
+        // FIX #3: Changed from emoji "👤" to a more visible colored circle with glow
+        _oPlayerAvatar = new createjs.Shape();
+        _oPlayerAvatar.graphics.beginFill("#00ff00").drawCircle(0, 0, 15);
+        _oPlayerAvatar.graphics.beginFill("#ffffff").drawCircle(0, 0, 8);
         _oPlayerAvatar.x = 55;
-        _oPlayerAvatar.y = 200;
-        _oPlayerAvatar.textAlign = "center";
+        _oPlayerAvatar.y = 215;
         _oPlayerAvatar.visible = false;
         _oGroup.addChild(_oPlayerAvatar);
         
-        // "YOU" indicator text
-        _oYouIndicator = new createjs.Text("◀ YOU", "bold 16px Arial", "#00ff00");
-        _oYouIndicator.shadow = new createjs.Shadow("#000000", 2, 2, 2);
-        _oYouIndicator.x = 120;
-        _oYouIndicator.y = 255;
+        // "YOU" indicator text - more prominent styling
+        _oYouIndicator = new createjs.Text("★ YOU ★", "bold 18px " + FONT_GAME_1, "#00ff00");
+        _oYouIndicator.shadow = new createjs.Shadow("#000000", 2, 2, 3);
+        _oYouIndicator.x = 55;
+        _oYouIndicator.y = 270;
+        _oYouIndicator.textAlign = "center";
         _oYouIndicator.visible = false;
         _oGroup.addChild(_oYouIndicator);
 
@@ -594,15 +597,24 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
         _oYouIndicator.visible = bShow;
         
         if (bShow) {
-            // Pulse animation for the avatar
+            // Pulse animation for the avatar (circle)
             createjs.Tween.removeTweens(_oPlayerAvatar);
             createjs.Tween.get(_oPlayerAvatar, { loop: true })
-                .to({ scaleX: 1.1, scaleY: 1.1 }, 500)
-                .to({ scaleX: 1, scaleY: 1 }, 500);
+                .to({ scaleX: 1.3, scaleY: 1.3, alpha: 0.7 }, 600)
+                .to({ scaleX: 1, scaleY: 1, alpha: 1 }, 600);
+            
+            // Subtle pulse for the "YOU" text too
+            createjs.Tween.removeTweens(_oYouIndicator);
+            createjs.Tween.get(_oYouIndicator, { loop: true })
+                .to({ alpha: 0.6 }, 800)
+                .to({ alpha: 1 }, 800);
         } else {
             createjs.Tween.removeTweens(_oPlayerAvatar);
+            createjs.Tween.removeTweens(_oYouIndicator);
             _oPlayerAvatar.scaleX = 1;
             _oPlayerAvatar.scaleY = 1;
+            _oPlayerAvatar.alpha = 1;
+            _oYouIndicator.alpha = 1;
         }
     };
     

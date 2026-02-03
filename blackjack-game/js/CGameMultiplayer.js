@@ -90,6 +90,7 @@ function CGameMultiplayer(oData) {
     var _aCurDealerPattern;
     var _aSeats;              // Array of CSeat objects
     var _aPlayerBets;         // Track bets for each seat
+    var _iPlayerSeatIndex;    // Track which seat the local player is in
     
     var _oStartingCardOffset;
     var _oDealerCardOffset;
@@ -144,6 +145,9 @@ function CGameMultiplayer(oData) {
         // Auto-occupy seat based on URL params or default to seat 0
         var iMySeat = oData.seat_number !== undefined ? (oData.seat_number - 1) : 0;  // Convert 1-based to 0-based
         if (iMySeat < 0 || iMySeat >= _iNumSeats) iMySeat = 0;
+        
+        // Track the player's seat index for persistence across resets
+        _iPlayerSeatIndex = iMySeat;
         
         var sPlayerName = oData.player_name || 'Player ' + (iMySeat + 1);
         
@@ -748,6 +752,19 @@ function CGameMultiplayer(oData) {
         for (var i = 0; i < _aSeats.length; i++) {
             _aSeats[i].reset();
             _aPlayerBets[i] = 0;
+            
+            // FIX #2: Keep other seats' sit-down buttons hidden after reset
+            // The player can only sit in one seat, so hide all other seat buttons
+            if (_iPlayerSeatIndex !== undefined && _iPlayerSeatIndex !== null) {
+                if (i !== _iPlayerSeatIndex) {
+                    _aSeats[i].setVisibleSitDownButton(false);
+                }
+                // Make sure player's seat stays occupied and shows avatar
+                if (i === _iPlayerSeatIndex) {
+                    _aSeats[i].setVisibleSitDownButton(false);  // Hide for player seat too
+                    _aSeats[i].showPlayerAvatar(true);  // Ensure avatar stays visible
+                }
+            }
         }
 
         _aCardsDealing = [];
@@ -1088,19 +1105,25 @@ function CGameMultiplayer(oData) {
 
         // Start new round after delay
         setTimeout(function() {
+            console.log('[CGameMultiplayer] Starting new round - calling reset');
             s_oGame.reset(false);
             
             if (_bMultiplayerMode && _oMultiplayer && _oMultiplayer.isHost()) {
                 _oMultiplayer.startBetting();
             } else {
-                // BUG FIX: Always transition to betting state for:
-                // - Single player mode (!_bMultiplayerMode)
-                // - Solo multiplayer (no _oMultiplayer or not host)
+                // FIX #1: Always transition to betting state and ensure buttons are enabled
+                // This covers: single player mode, solo multiplayer, or client mode
                 console.log('[CGameMultiplayer] Transitioning to betting state');
-                s_oGame.changeState(STATE_GAME_WAITING_FOR_BET);
+                
+                // Set state FIRST before enabling interface
+                _iState = STATE_GAME_WAITING_FOR_BET;
+                
                 if (_oInterface) {
-                    _oInterface.enableBetFiches();
+                    // Ensure buttons are in the right state
+                    _oInterface.disableButtons();  // Reset button state first
+                    _oInterface.enableBetFiches();  // Then enable bet fiches
                     _oInterface.displayMsg(TEXT_DISPLAY_MSG_WAITING_BET || "Place your bet!");
+                    console.log('[CGameMultiplayer] Bet fiches enabled, state:', _iState);
                 }
             }
         }, TIME_END_HAND);
@@ -1288,6 +1311,9 @@ function CGameMultiplayer(oData) {
     this._onSitDown = function(iSeatIndex) {
         // Mark this seat as occupied by the local player
         if (iSeatIndex >= 0 && iSeatIndex < _aSeats.length) {
+            // Track the player's seat index for persistence across resets
+            _iPlayerSeatIndex = iSeatIndex;
+            
             _aSeats[iSeatIndex].setOccupied(true);
             _aSeats[iSeatIndex].setPlayerInfo('Player ' + (iSeatIndex + 1), 'local_player');
             
