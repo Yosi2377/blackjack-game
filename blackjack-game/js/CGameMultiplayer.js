@@ -533,6 +533,12 @@ function CGameMultiplayer(oData) {
             } else if (iHandValue === 21) {
                 // Got 21 - automatically stand
                 setTimeout(function() { s_oGame._onPlayerPassTurn(); }, 500);
+            } else {
+                // Normal hit - re-enable buttons for next action
+                if (_oInterface) {
+                    var bDouble = false; // Can't double after hitting
+                    _oInterface.enable(false, true, true, bDouble, false);
+                }
             }
         }
     };
