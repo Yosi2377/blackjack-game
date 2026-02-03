@@ -159,188 +159,198 @@ function getHeightOfIOSToolbars() {
 var _lastValidWidth = 0;
 var _lastValidHeight = 0;
 
+// Listen for visual viewport changes (mobile keyboard, zoom, etc.)
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+        sizeHandler();
+    });
+}
+
 function sizeHandler() {
-	window.scrollTo(0, 1);
+    window.scrollTo(0, 1);
 
-	if (!$("#canvas")){
-		return;
-	}
+    if (!$("#canvas")){
+        return;
+    }
 
-	var h;
-	var w;
-	
-	// Check if we're in an iframe
-	var bInIframe = (window.self !== window.top);
-	
-	if (bInIframe) {
-		// In iframe - use available space from window dimensions
-		try {
-			h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-			w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-			
-			// Fallback: if dimensions are 0 or very small, retry later
-			if (h < 100 || w < 100) {
-				console.log('[sizeHandler] iframe dimensions too small:', w, 'x', h, '- waiting...');
-				if (_lastValidWidth > 100 && _lastValidHeight > 100) {
-					// Use last valid dimensions temporarily
-					w = _lastValidWidth;
-					h = _lastValidHeight;
-				} else {
-					// No valid dimensions yet, retry
-					setTimeout(sizeHandler, 500);
-					return;
-				}
-			} else {
-				// Store valid dimensions (but don't lock - allow resize)
-				_lastValidWidth = w;
-				_lastValidHeight = h;
-			}
-		} catch (e) {
-			h = getSize("Height");
-			w = getSize("Width");
-		}
-		console.log('[sizeHandler] iframe size:', w, 'x', h);
-	} else if (platform.name !== null && platform.name.toLowerCase() === "safari") {
-		h = getIOSWindowHeight();
-		w = getSize("Width");
-	} else { 
-		h = getSize("Height");
-		w = getSize("Width");
-	}
-	
-	// Mobile viewport fix - use visual viewport if available
-	// But NOT in iframes where we already have valid dimensions
-	if (window.visualViewport && !bInIframe) {
-		w = window.visualViewport.width;
-		h = window.visualViewport.height;
-	}
-        
-        if(s_bFocus){
-            _checkOrientation(w,h);
+    var h;
+    var w;
+    
+    // Check if we're in an iframe
+    var bInIframe = (window.self !== window.top);
+    
+    // Prefer visualViewport for accurate mobile dimensions (handles keyboard, safe areas)
+    if (window.visualViewport) {
+        w = window.visualViewport.width;
+        h = window.visualViewport.height;
+    } else if (bInIframe) {
+        // In iframe - use available space from window dimensions
+        try {
+            h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+            w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+        } catch (e) {
+            h = getSize("Height");
+            w = getSize("Width");
         }
-	
-	// For mobile in portrait mode, scale to fit entire game
-	var bPortrait = (h > w);
-	var bMobileDevice = isMobile();
-	
-	var multiplier;
-	if (bMobileDevice && bPortrait) {
-		// On mobile portrait: fit entire game in viewport (scale to fit width)
-		// This ensures nothing is cut off
-		multiplier = w / CANVAS_WIDTH;
-	} else {
-		// Normal: fit to smallest dimension
-		multiplier = Math.min((h / CANVAS_HEIGHT), (w / CANVAS_WIDTH));
-	}
-
-	var destW = Math.round(CANVAS_WIDTH * multiplier);
-	var destH = Math.round(CANVAS_HEIGHT * multiplier);
+    } else if (platform.name !== null && platform.name.toLowerCase() === "safari") {
+        h = getIOSWindowHeight();
+        w = getSize("Width");
+    } else { 
+        h = getSize("Height");
+        w = getSize("Width");
+    }
+    
+    // Fallback: if dimensions are 0 or very small, retry later
+    if (h < 100 || w < 100) {
+        console.log('[sizeHandler] dimensions too small:', w, 'x', h, '- waiting...');
+        if (_lastValidWidth > 100 && _lastValidHeight > 100) {
+            w = _lastValidWidth;
+            h = _lastValidHeight;
+        } else {
+            setTimeout(sizeHandler, 500);
+            return;
+        }
+    } else {
+        _lastValidWidth = w;
+        _lastValidHeight = h;
+    }
+    
+    if (bInIframe) {
+        console.log('[sizeHandler] size:', w, 'x', h);
+    }
         
-	// Only expand to fill if not on mobile portrait
-	if (!bMobileDevice || !bPortrait) {
-		var iAdd = 0;
-		if (destH < h){
-		    iAdd = h-destH;
-		    destH += iAdd;
-		    destW += iAdd*(CANVAS_WIDTH/CANVAS_HEIGHT);
-		}else if (destW < w){
-		    iAdd = w-destW;
-		    destW += iAdd;
-		    destH += iAdd*(CANVAS_HEIGHT/CANVAS_WIDTH);
-		}
-	}
+    if(s_bFocus){
+        _checkOrientation(w,h);
+    }
+    
+    // Detect orientation and device type
+    var bPortrait = (h > w);
+    var bMobileDevice = isMobile();
+    var gameAspect = CANVAS_WIDTH / CANVAS_HEIGHT; // ~2.21 for 1700x768
+    var screenAspect = w / h;
+    
+    var multiplier;
+    var destW, destH;
+    
+    if (bMobileDevice && bPortrait) {
+        // Mobile portrait: game is much wider than tall, screen is taller than wide
+        // Fit to width and let the game be shorter
+        multiplier = w / CANVAS_WIDTH;
+        destW = w;
+        destH = Math.round(CANVAS_HEIGHT * multiplier);
+        
+        // If resulting height is too small to be usable, use a minimum scale
+        // that ensures the buttons are at least tap-able (min 44px targets)
+        var minButtonHeight = 44;
+        var buttonScaleNeeded = minButtonHeight / 60; // Original button is ~60px
+        var minMultiplier = buttonScaleNeeded;
+        
+        if (multiplier < minMultiplier) {
+            multiplier = minMultiplier;
+            destW = Math.round(CANVAS_WIDTH * multiplier);
+            destH = Math.round(CANVAS_HEIGHT * multiplier);
+        }
+    } else if (bMobileDevice && !bPortrait) {
+        // Mobile landscape: fit to screen while maintaining aspect ratio
+        // Try to fill as much as possible
+        if (screenAspect > gameAspect) {
+            // Screen is wider than game - fit to height
+            multiplier = h / CANVAS_HEIGHT;
+        } else {
+            // Screen is narrower than game - fit to width
+            multiplier = w / CANVAS_WIDTH;
+        }
+        destW = Math.round(CANVAS_WIDTH * multiplier);
+        destH = Math.round(CANVAS_HEIGHT * multiplier);
+    } else {
+        // Desktop: use original logic with expansion
+        multiplier = Math.min((h / CANVAS_HEIGHT), (w / CANVAS_WIDTH));
+        destW = Math.round(CANVAS_WIDTH * multiplier);
+        destH = Math.round(CANVAS_HEIGHT * multiplier);
+        
+        // Expand to fill screen (original behavior for desktop)
+        var iAdd = 0;
+        if (destH < h){
+            iAdd = h - destH;
+            destH += iAdd;
+            destW += iAdd * (CANVAS_WIDTH / CANVAS_HEIGHT);
+        } else if (destW < w){
+            iAdd = w - destW;
+            destW += iAdd;
+            destH += iAdd * (CANVAS_HEIGHT / CANVAS_WIDTH);
+        }
+    }
 
-        var fOffsetY = ((h / 2) - (destH / 2));
-        var fOffsetX = ((w / 2) - (destW / 2));
-        var fGameInverseScaling = (CANVAS_WIDTH/destW);
+    var fOffsetY = ((h / 2) - (destH / 2));
+    var fOffsetX = ((w / 2) - (destW / 2));
+    var fGameInverseScaling = (CANVAS_WIDTH / destW);
 
-        if( fOffsetX*fGameInverseScaling < -EDGEBOARD_X ||  
-            fOffsetY*fGameInverseScaling < -EDGEBOARD_Y ){
-            multiplier = Math.min( h / (CANVAS_HEIGHT-(EDGEBOARD_Y*2)), w / (CANVAS_WIDTH-(EDGEBOARD_X*2)));
+    // Handle edge board constraints (but not in mobile portrait)
+    if (!bMobileDevice || !bPortrait) {
+        if( fOffsetX * fGameInverseScaling < -EDGEBOARD_X ||  
+            fOffsetY * fGameInverseScaling < -EDGEBOARD_Y ){
+            multiplier = Math.min( h / (CANVAS_HEIGHT - (EDGEBOARD_Y * 2)), w / (CANVAS_WIDTH - (EDGEBOARD_X * 2)));
             destW = CANVAS_WIDTH * multiplier;
             destH = CANVAS_HEIGHT * multiplier;
             fOffsetY = ( h - destH ) / 2;
             fOffsetX = ( w - destW ) / 2;
             
-            fGameInverseScaling = (CANVAS_WIDTH/destW);
+            fGameInverseScaling = (CANVAS_WIDTH / destW);
         }
+    }
 
-        s_iOffsetX = (-1*fOffsetX * fGameInverseScaling);
-        s_iOffsetY = (-1*fOffsetY * fGameInverseScaling);
-        
-        if(fOffsetY >= 0 ){
-            s_iOffsetY = 0;
-        }
-        
-        if(fOffsetX >= 0 ){
-            s_iOffsetX = 0;
-        }
-        
-        if(s_oInterface !== null){
-            s_oInterface.refreshButtonPos( s_iOffsetX,s_iOffsetY);
-        }
-        if(s_oMenu !== null){
-            s_oMenu.refreshButtonPos( s_iOffsetX,s_iOffsetY);
-        }
-        
-        
-	if(s_bIsRetina && s_oStage){
-            canvas = document.getElementById('canvas');
-            s_oStage.canvas.width = destW*2;
-            s_oStage.canvas.height = destH*2;
-            canvas.style.width = destW+"px";
-            canvas.style.height = destH+"px";
-            var iScale = Math.min(destW / CANVAS_WIDTH, destH / CANVAS_HEIGHT);
-            s_iScaleFactor= iScale*2;  
-            s_oStage.scaleX = s_oStage.scaleY = iScale*2;  
-        }else if(s_bMobile){
-            var canvas = document.getElementById('canvas');
-            // On mobile, set the actual canvas dimensions too
-            if (s_oStage) {
-                s_oStage.canvas.width = destW;
-                s_oStage.canvas.height = destH;
-                s_iScaleFactor = Math.min(destW / CANVAS_WIDTH, destH / CANVAS_HEIGHT);
-                s_oStage.scaleX = s_oStage.scaleY = s_iScaleFactor;
-            }
-            $("#canvas").css("width",destW+"px");
-            $("#canvas").css("height",destH+"px");
-        }else if(s_oStage){
-            s_oStage.canvas.width = destW;
-            s_oStage.canvas.height = destH;
-
-            s_iScaleFactor = Math.min(destW / CANVAS_WIDTH, destH / CANVAS_HEIGHT);
-            s_oStage.scaleX = s_oStage.scaleY = s_iScaleFactor; 
-        }
-        
-        // Center the canvas
-        fOffsetY = Math.max(0, (h - destH) / 2);
+    s_iOffsetX = (-1 * fOffsetX * fGameInverseScaling);
+    s_iOffsetY = (-1 * fOffsetY * fGameInverseScaling);
+    
+    if(fOffsetY >= 0){
+        s_iOffsetY = 0;
+    }
+    
+    if(fOffsetX >= 0){
+        s_iOffsetX = 0;
+    }
+    
+    if(s_oInterface !== null){
+        s_oInterface.refreshButtonPos(s_iOffsetX, s_iOffsetY);
+    }
+    if(s_oMenu !== null){
+        s_oMenu.refreshButtonPos(s_iOffsetX, s_iOffsetY);
+    }
+    
+    // Calculate final scale factor
+    s_iScaleFactor = Math.min(destW / CANVAS_WIDTH, destH / CANVAS_HEIGHT);
+    
+    if(s_bIsRetina && s_oStage){
+        var canvas = document.getElementById('canvas');
+        s_oStage.canvas.width = destW * 2;
+        s_oStage.canvas.height = destH * 2;
+        canvas.style.width = destW + "px";
+        canvas.style.height = destH + "px";
+        s_iScaleFactor = s_iScaleFactor * 2;  
+        s_oStage.scaleX = s_oStage.scaleY = s_iScaleFactor;  
+    } else if(s_oStage){
+        s_oStage.canvas.width = destW;
+        s_oStage.canvas.height = destH;
+        s_oStage.scaleX = s_oStage.scaleY = s_iScaleFactor;
+    }
+    
+    $("#canvas").css("width", destW + "px");
+    $("#canvas").css("height", destH + "px");
+    
+    // Center the canvas - for mobile portrait, align to top
+    if (bMobileDevice && bPortrait) {
         fOffsetX = Math.max(0, (w - destW) / 2);
-        
-        // On mobile portrait, ensure canvas fits within viewport
-        if (bMobileDevice && bPortrait) {
-            // Ensure the canvas doesn't exceed viewport width
-            if (destW > w) {
-                var newScale = w / destW;
-                destW = w;
-                destH = destH * newScale;
-                if (s_oStage) {
-                    s_iScaleFactor = s_iScaleFactor * newScale;
-                    s_oStage.scaleX = s_oStage.scaleY = s_iScaleFactor;
-                    s_oStage.canvas.width = destW;
-                    s_oStage.canvas.height = destH;
-                }
-                $("#canvas").css("width", destW + "px");
-                $("#canvas").css("height", destH + "px");
-            }
-            fOffsetX = 0; // No horizontal offset on mobile portrait
-            fOffsetY = Math.max(0, (h - destH) / 2);
-        }
-        
-        $("#canvas").css("top", fOffsetY + "px");
-        $("#canvas").css("left", fOffsetX + "px");
-        
-        fullscreenHandler();
-};
+        fOffsetY = 0; // Align to top so buttons at bottom are more accessible
+    } else {
+        fOffsetX = Math.max(0, (w - destW) / 2);
+        fOffsetY = Math.max(0, (h - destH) / 2);
+    }
+    
+    $("#canvas").css("top", fOffsetY + "px");
+    $("#canvas").css("left", fOffsetX + "px");
+    
+    fullscreenHandler();
+}
 
 function _checkOrientation(iWidth,iHeight){
     if(s_bMobile && ENABLE_CHECK_ORIENTATION){
