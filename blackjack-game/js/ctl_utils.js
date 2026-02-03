@@ -158,7 +158,6 @@ function getHeightOfIOSToolbars() {
 // Store last valid dimensions to recover from bad resize events
 var _lastValidWidth = 0;
 var _lastValidHeight = 0;
-var _iframeLocked = false;
 
 function sizeHandler() {
 	window.scrollTo(0, 1);
@@ -174,44 +173,33 @@ function sizeHandler() {
 	var bInIframe = (window.self !== window.top);
 	
 	if (bInIframe) {
-		// AGGRESSIVE FIX: Once we have good dimensions, lock them forever
-		if (_iframeLocked && _lastValidWidth > 100 && _lastValidHeight > 100) {
-			// Use locked dimensions, ignore any resize attempts
-			console.log('[sizeHandler] LOCKED - using:', _lastValidWidth, 'x', _lastValidHeight);
-			w = _lastValidWidth;
-			h = _lastValidHeight;
-		} else {
-			// In iframe - use available space
-			try {
-				h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-				w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-				
-				// Fallback: if dimensions are 0 or very small, use last valid dimensions or wait
-				if (h < 100 || w < 100) {
-					console.log('[sizeHandler] iframe dimensions too small:', w, 'x', h, '- BLOCKED');
-					if (_lastValidWidth > 100 && _lastValidHeight > 100) {
-						// Lock and use last valid dimensions
-						_iframeLocked = true;
-						console.log('[sizeHandler] LOCKING at:', _lastValidWidth, 'x', _lastValidHeight);
-						return; // Don't resize at all with bad dimensions
-					} else {
-						// No valid dimensions yet, just retry
-						setTimeout(sizeHandler, 500);
-						return;
-					}
+		// In iframe - use available space from window dimensions
+		try {
+			h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+			w = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+			
+			// Fallback: if dimensions are 0 or very small, retry later
+			if (h < 100 || w < 100) {
+				console.log('[sizeHandler] iframe dimensions too small:', w, 'x', h, '- waiting...');
+				if (_lastValidWidth > 100 && _lastValidHeight > 100) {
+					// Use last valid dimensions temporarily
+					w = _lastValidWidth;
+					h = _lastValidHeight;
 				} else {
-					// Store valid dimensions and lock
-					_lastValidWidth = w;
-					_lastValidHeight = h;
-					_iframeLocked = true;
-					console.log('[sizeHandler] First good size - LOCKING at:', w, 'x', h);
+					// No valid dimensions yet, retry
+					setTimeout(sizeHandler, 500);
+					return;
 				}
-			} catch (e) {
-				h = getSize("Height");
-				w = getSize("Width");
+			} else {
+				// Store valid dimensions (but don't lock - allow resize)
+				_lastValidWidth = w;
+				_lastValidHeight = h;
 			}
+		} catch (e) {
+			h = getSize("Height");
+			w = getSize("Width");
 		}
-		console.log('[sizeHandler] iframe final size:', w, 'x', h);
+		console.log('[sizeHandler] iframe size:', w, 'x', h);
 	} else if (platform.name !== null && platform.name.toLowerCase() === "safari") {
 		h = getIOSWindowHeight();
 		w = getSize("Width");
