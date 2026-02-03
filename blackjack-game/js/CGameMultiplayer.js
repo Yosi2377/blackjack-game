@@ -623,6 +623,11 @@ function CGameMultiplayer(oData) {
         }
         
         oSeat.showWinner(0, sText, oResult.winAmount);
+        
+        // FIX: Update the UI balance display after credits change
+        if (_oInterface) {
+            _oInterface.refreshCredit(s_oGame.getMoney());
+        }
     };
 
     this._showAllResults = function(aResults) {
