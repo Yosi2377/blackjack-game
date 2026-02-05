@@ -1,6 +1,7 @@
 {
   "lastStatus": "connected",
-  "lastCheckAt": "2026-02-03T12:48:00+02:00",
-  "lastDisconnectAt": null,
-  "lastReconnectAt": null
+  "lastCheckAt": "2026-02-05T02:46:00+02:00",
+  "lastDisconnectAt": "2026-02-04T01:12:00+02:00",
+  "lastReconnectAt": "2026-02-04T01:14:00+02:00",
+  "note": "cron running via whatsapp channel - connection confirmed"
 }

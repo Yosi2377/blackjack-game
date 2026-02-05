@@ -192,6 +192,13 @@ function CFichesController(pPos,pInsurance){
         }
     };
     
+    // Allow repositioning for dynamic seat updates
+    this.setPosition = function(iX, iY) {
+        _oFichesAttach.x = iX;
+        _oFichesAttach.y = iY;
+        _pFicheStartPos.set(iX, iY);
+    };
+    
     this._init(pPos,pInsurance);
     
 }

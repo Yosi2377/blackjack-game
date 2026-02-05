@@ -51,12 +51,21 @@ function CGame(oData){
 
         s_oTweenController = new CTweenController();
         
-        var iRandBg = Math.floor(Math.random() * 4) + 1;
+        // Load saved table background or pick random if none saved
+        var iRandBg = CStorage.getTableBg();
+        if (!iRandBg || iRandBg < 1 || iRandBg > 4) {
+            iRandBg = Math.floor(Math.random() * 4) + 1;
+            CStorage.saveTableBg(iRandBg);
+        }
         _oBg = createBitmap(s_oSpriteLibrary.getSprite('bg_game_'+iRandBg));
         s_oStage.addChild(_oBg);
 
         _oSeat = new CSeat();
-        _oSeat.setCredit(TOTAL_MONEY);
+        // Load saved credits or use default
+        var savedCredits = CStorage.getCredits();
+        var startCredits = (savedCredits !== null && savedCredits > 0) ? savedCredits : TOTAL_MONEY;
+        _oSeat.setCredit(startCredits);
+        TOTAL_MONEY = startCredits; // Update global for consistency
         _oSeat.addEventListener(SIT_DOWN,this._onSitDown,this);
         _oSeat.addEventListener(RESTORE_ACTION,this._onSetPlayerActions);
         _oSeat.addEventListener(PASS_TURN,this._passTurnToDealer);

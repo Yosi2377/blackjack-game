@@ -21,6 +21,24 @@ var CPostMessageBridge = {
         }
     },
     
+    // Send game result for history tracking
+    sendGameResult: function(oResult) {
+        if (window.parent !== window) {
+            try {
+                window.parent.postMessage({
+                    type: 'GAME_RESULT',
+                    result: oResult.result,      // 'win', 'lose', 'push', 'blackjack', 'bust'
+                    betAmount: oResult.betAmount || 0,
+                    payout: oResult.payout || 0,
+                    timestamp: Date.now()
+                }, '*');
+                console.log('[PostMessage] Sent GAME_RESULT:', oResult.result, 'bet:', oResult.betAmount, 'payout:', oResult.payout);
+            } catch (e) {
+                console.warn('[PostMessage] Failed to send game result:', e);
+            }
+        }
+    },
+    
     // Initialize listener for incoming messages
     init: function() {
         window.addEventListener('message', function(event) {
@@ -109,6 +127,7 @@ function CGameMultiplayer(oData) {
     var _bWaitingForPlayers;
     var _bAllBetsPlaced;
     var _bWinnersChecked = false;  // BUG FIX: Prevent duplicate winner checking
+    var _bDealerHitting = false;   // BUG FIX: Prevent dealer from dealing multiple cards at once
 
     // Seat positions for 5 players (x, y coordinates)
     var SEAT_POSITIONS = [
@@ -263,6 +282,44 @@ function CGameMultiplayer(oData) {
         }
     };
 
+    // BUGFIX: Dynamically add more seats when multiplayer state requires them
+    this._addMoreSeats = function(iTargetSeats) {
+        iTargetSeats = Math.min(iTargetSeats, 5); // Max 5 seats
+        
+        if (iTargetSeats <= _aSeats.length) return;
+        
+        console.log('[Game] Adding seats from', _aSeats.length, 'to', iTargetSeats);
+        
+        // Get the new positions for the expanded seat count
+        var aNewPositions = this._getSeatPositions(iTargetSeats);
+        
+        // First, update existing seats to new positions (they might move)
+        for (var i = 0; i < _aSeats.length; i++) {
+            if (_aSeats[i] && aNewPositions[i]) {
+                _aSeats[i].setPosition(aNewPositions[i].x, aNewPositions[i].y);
+            }
+        }
+        
+        // Add new seats
+        for (var j = _aSeats.length; j < iTargetSeats; j++) {
+            var oSeat = new CSeatMultiplayer(aNewPositions[j].x, aNewPositions[j].y, j);
+            oSeat.setCredit(TOTAL_MONEY);
+            oSeat.addEventListener(SIT_DOWN, this._onSitDown, this);
+            oSeat.addEventListener(RESTORE_ACTION, this._onSetPlayerActions);
+            oSeat.addEventListener(PASS_TURN, this._onPlayerPassTurn);
+            oSeat.addEventListener(END_HAND, this._onEndHand);
+            oSeat.addEventListener(PLAYER_LOSE, this._playerLose);
+            oSeat.setVisibleSitDownButton(false); // Hide sit down in multiplayer
+            
+            _aSeats.push(oSeat);
+            _aPlayerBets.push(0);
+            
+            console.log('[Game] Added seat', j, 'at', aNewPositions[j].x, aNewPositions[j].y);
+        }
+        
+        _iNumSeats = iTargetSeats;
+    };
+
     this.setMultiplayerManager = function(oManager) {
         _oMultiplayer = oManager;
         
@@ -283,9 +340,19 @@ function CGameMultiplayer(oData) {
     this._onMPPlayerJoined = function(oPlayer) {
         console.log('[Game] Player joined:', oPlayer.name, 'at seat', oPlayer.seatIndex);
         
+        // BUGFIX: Ensure we have enough seats for this player
+        if (oPlayer.seatIndex >= _aSeats.length) {
+            this._addMoreSeats(oPlayer.seatIndex + 1);
+        }
+        
         if (oPlayer.seatIndex < _aSeats.length) {
             _aSeats[oPlayer.seatIndex].setPlayerInfo(oPlayer.name, oPlayer.id);
             _aSeats[oPlayer.seatIndex].setOccupied(true);
+            
+            // Show remote indicator if not local player
+            if (_oMultiplayer && oPlayer.id !== _oMultiplayer.getPlayerId()) {
+                _aSeats[oPlayer.seatIndex].showRemotePlayer(true);
+            }
         }
         
         this._updateWaitingMessage();
@@ -301,15 +368,31 @@ function CGameMultiplayer(oData) {
     };
 
     this._onMPStateChanged = function(oState) {
-        console.log('[Game] State changed:', oState.phase);
+        console.log('[Game] State changed:', oState.phase, 'players:', oState.players.length, 'maxPlayers:', oState.maxPlayers);
+        
+        // BUGFIX: Ensure we have enough seats for all players
+        // If maxPlayers from server is higher than our local seats, add more
+        var iRequiredSeats = oState.maxPlayers || oState.players.length;
+        if (iRequiredSeats > _aSeats.length) {
+            console.log('[Game] Need more seats:', iRequiredSeats, 'have:', _aSeats.length);
+            this._addMoreSeats(iRequiredSeats);
+        }
         
         // Update all seats with player info
         for (var i = 0; i < oState.players.length; i++) {
             var oPlayer = oState.players[i];
             if (oPlayer.seatIndex < _aSeats.length) {
+                console.log('[Game] Updating seat', oPlayer.seatIndex, 'for player', oPlayer.name);
                 _aSeats[oPlayer.seatIndex].setPlayerInfo(oPlayer.name, oPlayer.id);
                 _aSeats[oPlayer.seatIndex].setOccupied(true);
                 _aSeats[oPlayer.seatIndex].setCredit(oPlayer.credits);
+                
+                // Show avatar for other players too (different color than local "YOU")
+                if (oPlayer.id !== _oMultiplayer.getPlayerId()) {
+                    _aSeats[oPlayer.seatIndex].showRemotePlayer(true);
+                }
+            } else {
+                console.error('[Game] Seat index out of bounds:', oPlayer.seatIndex, 'seats:', _aSeats.length);
             }
         }
         
@@ -567,6 +650,12 @@ function CGameMultiplayer(oData) {
     };
 
     this._startDealerTurn = function() {
+        // Prevent multiple dealer turn starts
+        if (_iState === STATE_GAME_FINALIZE || _iState === STATE_GAME_SHOW_WINNER) {
+            console.log('[CGameMultiplayer] _startDealerTurn called but already in dealer/result state - skipping');
+            return;
+        }
+        
         _bPlayerTurn = false;
         _oInterface.disableButtons();
         
@@ -588,6 +677,12 @@ function CGameMultiplayer(oData) {
     };
 
     this._dealerPlay = function() {
+        // Prevent multiple simultaneous dealer plays
+        if (_bDealerHitting) {
+            console.log('[CGameMultiplayer] _dealerPlay called while dealer already hitting - skipping');
+            return;
+        }
+        
         if (_iDealerValueCard < 17) {
             this.hitDealer();
         } else {
@@ -613,18 +708,19 @@ function CGameMultiplayer(oData) {
             
             var oSeat = _aSeats[i];
             var iPlayerValue = oSeat.getHandValue(0);
+            // FIX: Use getBetForHand(0) instead of getCurBet() because after stand,
+            // _iCurHand becomes -1 and getCurBet() returns 0
+            var iBet = oSeat.getBetForHand(0);
+            
             var oResult = {
                 seatIndex: i,
                 playerId: oSeat.getPlayerId(),
                 playerValue: iPlayerValue,
                 dealerValue: _iDealerValueCard,
                 result: 'lose',
-                winAmount: 0
+                winAmount: 0,
+                betAmount: iBet
             };
-            
-            // FIX: Use getBetForHand(0) instead of getCurBet() because after stand,
-            // _iCurHand becomes -1 and getCurBet() returns 0
-            var iBet = oSeat.getBetForHand(0);
             
             if (iPlayerValue > 21) {
                 oResult.result = 'bust';
@@ -641,10 +737,11 @@ function CGameMultiplayer(oData) {
                 oResult.result = 'lose';
             }
             
-            // Check for blackjack
+            // Check for blackjack (natural 21 with 2 cards)
+            // Payout is 3:2 by default (BLACKJACK_PAYOUT = 1.5)
             if (iPlayerValue === 21 && oSeat.getNumCardsForHand(0) === 2) {
                 oResult.result = 'blackjack';
-                oResult.winAmount = iBet * 2.5;
+                oResult.winAmount = iBet + (iBet * BLACKJACK_PAYOUT);
             }
             
             aResults.push(oResult);
@@ -669,7 +766,7 @@ function CGameMultiplayer(oData) {
         setTimeout(function() {
             console.log('[CGameMultiplayer] Triggering end of hand to reset game');
             s_oGame._onEndHand();
-        }, 2000);  // 2 second delay to show results before clearing
+        }, 5000);  // 5 second delay to show results before clearing
     };
 
     this._showSeatResult = function(iSeat, oResult) {
@@ -709,6 +806,13 @@ function CGameMultiplayer(oData) {
         
         // Sync balance to parent window via postMessage
         CPostMessageBridge.sendBalanceUpdate(s_oGame.getMoney());
+        
+        // Send game result for history tracking
+        CPostMessageBridge.sendGameResult({
+            result: oResult.result,
+            betAmount: oResult.betAmount || 0,
+            payout: oResult.winAmount || 0
+        });
     };
 
     this._showAllResults = function(aResults) {
@@ -754,6 +858,7 @@ function CGameMultiplayer(oData) {
         _iCurrentPlayerTurn = 0;
         _bAllBetsPlaced = false;
         _bWinnersChecked = false;  // BUG FIX: Reset flag for new round
+        _bDealerHitting = false;   // BUG FIX: Reset dealer hitting flag
 
         for (var i = 0; i < _aSeats.length; i++) {
             _aSeats[i].reset();
@@ -1028,6 +1133,13 @@ function CGameMultiplayer(oData) {
     };
 
     this.hitDealer = function() {
+        // BUG FIX: Prevent dealing multiple cards at once
+        if (_bDealerHitting) {
+            console.log('[CGameMultiplayer] hitDealer called while already hitting - skipping');
+            return;
+        }
+        _bDealerHitting = true;
+        
         var pStartingPoint = new CVector2(_oStartingCardOffset.getX(), _oStartingCardOffset.getY());
         var pEndingPoint = new CVector2(
             _oDealerCardOffset.getX() + ((CARD_WIDTH + 3) * _iCardDealedToDealer),
@@ -1049,6 +1161,9 @@ function CGameMultiplayer(oData) {
     };
 
     this._onDealerCardArrived = function(oCard, bDealerCard, iCount) {
+        // Reset the flag so next card can be dealt
+        _bDealerHitting = false;
+        
         _iDealerValueCard += oCard.getValue();
         
         if (oCard.getValue() === 11) {
@@ -1074,7 +1189,8 @@ function CGameMultiplayer(oData) {
         }
 
         if (_iDealerValueCard < 17) {
-            setTimeout(function() { s_oGame.hitDealer(); }, 500);
+            // Increased delay to ensure animation completes
+            setTimeout(function() { s_oGame.hitDealer(); }, 800);
         } else {
             s_oGame._checkAllWinners();
         }
@@ -1232,6 +1348,108 @@ function CGameMultiplayer(oData) {
             _oMultiplayer.sendAction('double');
         } else {
             this._playerDouble(_iCurrentPlayerTurn);
+        }
+    };
+
+    // Split implementation
+    this.onSplit = function() {
+        if (_bMultiplayerMode && _oMultiplayer) {
+            _oMultiplayer.sendAction('split');
+        } else {
+            this._playerSplit(_iCurrentPlayerTurn);
+        }
+    };
+
+    this._playerSplit = function(iSeat) {
+        var oSeat = _aSeats[iSeat];
+        if (!oSeat || !oSeat.isOccupied()) return;
+        
+        var iCurBet = oSeat.getCurBet();
+        
+        // Check if player has enough credits for split
+        if (oSeat.getCredit() < iCurBet) {
+            _oMsgBox.show(TEXT_NO_MONEY);
+            return;
+        }
+        
+        // Trigger the split animation
+        oSeat.split();
+        
+        // Disable buttons during split animation
+        _oInterface.enable(false, false, false, false, false);
+    };
+
+    this._onSplitCardEndAnim = function() {
+        var oSeat = _aSeats[_iCurrentPlayerTurn];
+        if (!oSeat) return;
+        
+        var iCurBet = oSeat.getCurBet();
+        var iSplitBet = iCurBet;
+        
+        // Double the bet display (split requires equal bet on second hand)
+        oSeat.bet(iCurBet * 2, true);
+        
+        // Set up the split hands
+        oSeat.setSplitHand();
+        oSeat.refreshCardValue();
+        
+        // Deduct credit for split bet
+        oSeat.decreaseCredit(iSplitBet);
+        
+        // Update interface
+        _oInterface.refreshCredit(oSeat.getCredit());
+        _oInterface.enable(false, true, true, false, false);
+        
+        // Sync balance
+        if (typeof CPostMessageBridge !== 'undefined') {
+            CPostMessageBridge.sendBalanceUpdate(oSeat.getCredit());
+        }
+        
+        console.log('[CGameMultiplayer] Split completed, bet doubled to:', iCurBet * 2);
+    };
+
+    // Clear current bet and return chips to player
+    this.clearBets = function() {
+        var iMySeat = _bMultiplayerMode && _oMultiplayer ? _oMultiplayer.getSeatIndex() : 0;
+        if (iMySeat < 0 || iMySeat === undefined) iMySeat = 0;
+        
+        var oSeat = _aSeats[iMySeat];
+        if (!oSeat) return;
+        
+        var iCurBet = oSeat.getCurBet();
+        if (iCurBet > 0) {
+            oSeat.clearBet();
+            oSeat.increaseCredit(iCurBet);
+            _oInterface.refreshCredit(oSeat.getCredit());
+            
+            // Sync balance
+            if (typeof CPostMessageBridge !== 'undefined') {
+                CPostMessageBridge.sendBalanceUpdate(oSeat.getCredit());
+            }
+        }
+    };
+    
+    // Rebet same amount as last hand
+    this.rebet = function() {
+        this.clearBets();
+        
+        var iMySeat = _bMultiplayerMode && _oMultiplayer ? _oMultiplayer.getSeatIndex() : 0;
+        if (iMySeat < 0 || iMySeat === undefined) iMySeat = 0;
+        
+        var oSeat = _aSeats[iMySeat];
+        if (!oSeat) return;
+        
+        var iValue = oSeat.rebet();
+        if (iValue > 0) {
+            _oInterface.enable(true, false, false, false, false);
+            _oInterface.refreshCredit(oSeat.getCredit());
+            
+            // Sync balance
+            if (typeof CPostMessageBridge !== 'undefined') {
+                CPostMessageBridge.sendBalanceUpdate(oSeat.getCredit());
+            }
+        } else {
+            _oInterface.disableRebet();
         }
     };
 

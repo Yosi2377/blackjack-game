@@ -65,11 +65,14 @@ function CInterface(iMoney){
         oBetBg.y = CANVAS_HEIGHT - oSprite.height + 4;
         s_oStage.addChild(oBetBg);
         
+        // Clear and Rebet buttons - scaled up with proper spacing
         var oSprite = s_oSpriteLibrary.getSprite('but_game_small_bg');
-        _oClearBetBut = new CTextButton(444,CANVAS_HEIGHT -30,oSprite,TEXT_CLEAR,FONT_GAME_1,"#ffffff",14,s_oStage);
+        _oClearBetBut = new CTextButton(430,CANVAS_HEIGHT -30,oSprite,TEXT_CLEAR,FONT_GAME_1,"#ffffff",14,s_oStage);
+        _oClearBetBut.setScale(1.15);
         _oClearBetBut.addEventListener(ON_MOUSE_UP, this._onButClearRelease, this);
         
-        _oRebetBut = new CTextButton(632,CANVAS_HEIGHT -30,oSprite,TEXT_REBET,FONT_GAME_1,"#ffffff",14,s_oStage);
+        _oRebetBut = new CTextButton(600,CANVAS_HEIGHT -30,oSprite,TEXT_REBET,FONT_GAME_1,"#ffffff",14,s_oStage);
+        _oRebetBut.setScale(1.15);
         _oRebetBut.addEventListener(ON_MOUSE_UP, this._onButRebetRelease, this);
         
         _oDisplayText1 = new CTLText(s_oStage, 
@@ -110,31 +113,53 @@ function CInterface(iMoney){
                     TEXT_CURRENCY+iMoney.toFixed(2),
                     true, true, true,
                     false );
+        
+        // Save initial credits to localStorage
+        if (typeof CStorage !== 'undefined') {
+            CStorage.saveCredits(iMoney);
+        }
 
+        
+        // Action buttons - scaled up 35% for easier clicking
+        var iButtonScale = 1.35;
+        var iButtonSpacing = 115; // Adjusted spacing for larger buttons
+        var iButtonStartX = 870;
         
         oSprite = s_oSpriteLibrary.getSprite('but_game_bg');
-        _oDealBut = new CTextButton(908,CANVAS_HEIGHT -30,oSprite,TEXT_DEAL,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oDealBut = new CTextButton(iButtonStartX,CANVAS_HEIGHT -30,oSprite,TEXT_DEAL,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oDealBut.setScale(iButtonScale);
         _oDealBut.addEventListener(ON_MOUSE_UP, this._onButDealRelease, this);
         
-        _oHitBut = new CTextButton(1008,CANVAS_HEIGHT -30,oSprite,TEXT_HIT,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oHitBut = new CTextButton(iButtonStartX+iButtonSpacing,CANVAS_HEIGHT -30,oSprite,TEXT_HIT,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oHitBut.setScale(iButtonScale);
         _oHitBut.addEventListener(ON_MOUSE_UP, this._onButHitRelease, this);
         
-        _oStandBut = new CTextButton(1108,CANVAS_HEIGHT -30,oSprite,TEXT_STAND,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oStandBut = new CTextButton(iButtonStartX+iButtonSpacing*2,CANVAS_HEIGHT -30,oSprite,TEXT_STAND,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oStandBut.setScale(iButtonScale);
         _oStandBut.addEventListener(ON_MOUSE_UP, this._onButStandRelease, this);
         
-        _oDoubleBut = new CTextButton(1208,CANVAS_HEIGHT -30,oSprite,TEXT_DOUBLE,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oDoubleBut = new CTextButton(iButtonStartX+iButtonSpacing*3,CANVAS_HEIGHT -30,oSprite,TEXT_DOUBLE,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oDoubleBut.setScale(iButtonScale);
         _oDoubleBut.addEventListener(ON_MOUSE_UP, this._onButDoubleRelease, this);
         
-        _oSplitBut  = new CTextButton(1308,CANVAS_HEIGHT -30,oSprite,TEXT_SPLIT,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oSplitBut  = new CTextButton(iButtonStartX+iButtonSpacing*4,CANVAS_HEIGHT -30,oSprite,TEXT_SPLIT,FONT_GAME_1,"#ffffff",20,s_oStage);
+        _oSplitBut.setScale(iButtonScale);
         _oSplitBut.addEventListener(ON_MOUSE_UP, this._onButSplitRelease, this);
 
-        //SET FICHES BUTTON
-        var aPos = [{x:387,y:666},{x:447,y:666},{x:507,y:666},{x:567,y:666},{x:627,y:666},{x:687,y:666}];
+        //SET FICHES BUTTON - scaled up for easier clicking
+        var iFicheScale = 1.25; // 25% bigger chips
+        var iFicheSpacing = 50; // Space between chips
+        var iFicheStartX = 390; // Inside the bet frame
+        var aPos = [
+            {x:iFicheStartX,y:666},{x:iFicheStartX+iFicheSpacing,y:666},{x:iFicheStartX+iFicheSpacing*2,y:666},
+            {x:iFicheStartX+iFicheSpacing*3,y:666},{x:iFicheStartX+iFicheSpacing*4,y:666},{x:iFicheStartX+iFicheSpacing*5,y:666}
+        ];
         _aFiches = new Array();
         
         var aFichesValues = s_oGameSettings.getFichesValues();
         for(var i=0;i<NUM_FICHES;i++){
             _aFiches[i] = new CFiche(aPos[i].x,aPos[i].y,i,aFichesValues[i],true,s_oStage);
+            _aFiches[i].setScale(iFicheScale);
             _aFiches[i].addEventListenerWithParams(ON_MOUSE_UP, this._onFicheClicked, this, [ aFichesValues[i], i ]);
         }
         
@@ -245,6 +270,11 @@ function CInterface(iMoney){
             iMoney = 0;
         }
         _oMoneyText.refreshText(TEXT_CURRENCY+iMoney.toFixed(2));
+        
+        // Save credits to localStorage for persistence
+        if (typeof CStorage !== 'undefined') {
+            CStorage.saveCredits(iMoney);
+        }
     };
     
     this.refreshDealerCardValue = function(iDealerValue){

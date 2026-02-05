@@ -58,8 +58,8 @@ var WIN_OCCURRENCE;
 var TIME_FICHES_MOV = 600;
 var TIME_CARD_DEALING = 250;
 var TIME_CARD_REMOVE = 1000;
-var TIME_SHOW_FINAL_CARDS = 4000;
-var TIME_END_HAND = 1500;
+var TIME_SHOW_FINAL_CARDS = 6000;  // Increased from 4000 - time to show win/lose message
+var TIME_END_HAND = 3000;          // Increased from 1500 - time before clearing cards
 var BET_TIME = 10000;
 var COLOR_FICHE_PER_VALUE = ["#000","#000","#000","#fff","#000","#fff"];
 var SIZE_FONT_FICHE =[12,18,18,18,18,20];

@@ -745,5 +745,51 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
         return _oMainFichesController.getValue();
     };
 
+    // BUGFIX: Allow repositioning seats dynamically for multiplayer
+    this.setPosition = function(iX, iY) {
+        _oGroup.x = iX;
+        _oGroup.y = iY;
+        
+        // Update fiches controller position
+        if (_oMainFichesController) {
+            _oMainFichesController.setPosition(iX + 55, iY + 200);
+        }
+    };
+    
+    // Show indicator for remote players (different from local "YOU" indicator)
+    this.showRemotePlayer = function(bShow) {
+        // Create remote player indicator if it doesn't exist
+        if (!this._oRemoteIndicator) {
+            this._oRemoteIndicator = new createjs.Shape();
+            this._oRemoteIndicator.graphics.beginFill("#ff9800").drawCircle(0, 0, 12);
+            this._oRemoteIndicator.graphics.beginFill("#ffffff").drawCircle(0, 0, 6);
+            this._oRemoteIndicator.x = 55;
+            this._oRemoteIndicator.y = 215;
+            this._oRemoteIndicator.visible = false;
+            _oGroup.addChild(this._oRemoteIndicator);
+            
+            this._oRemoteText = new createjs.Text("●", "bold 16px " + FONT_GAME_1, "#ff9800");
+            this._oRemoteText.shadow = new createjs.Shadow("#000000", 2, 2, 2);
+            this._oRemoteText.x = 55;
+            this._oRemoteText.y = 270;
+            this._oRemoteText.textAlign = "center";
+            this._oRemoteText.visible = false;
+            _oGroup.addChild(this._oRemoteText);
+        }
+        
+        this._oRemoteIndicator.visible = bShow;
+        this._oRemoteText.visible = bShow;
+        
+        if (bShow) {
+            // Pulse animation
+            createjs.Tween.removeTweens(this._oRemoteIndicator);
+            createjs.Tween.get(this._oRemoteIndicator, { loop: true })
+                .to({ scaleX: 1.2, scaleY: 1.2, alpha: 0.8 }, 500)
+                .to({ scaleX: 1, scaleY: 1, alpha: 1 }, 500);
+        } else {
+            createjs.Tween.removeTweens(this._oRemoteIndicator);
+        }
+    };
+
     this._init(iX, iY, iSeatIndex);
 }
