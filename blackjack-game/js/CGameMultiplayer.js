@@ -973,7 +973,7 @@ function CGameMultiplayer(oData) {
                 // Deal to dealer
                 _iCardDealedToDealer++;
                 pEndingPoint = new CVector2(
-                    _oDealerCardOffset.getX() + (CARD_WIDTH + 2) * (_iCardDealedToDealer - 1),
+                    _oDealerCardOffset.getX() + ((CARD_WIDTH*CARD_SCALE) + 2) * (_iCardDealedToDealer - 1),
                     _oDealerCardOffset.getY()
                 );
 
@@ -1142,7 +1142,7 @@ function CGameMultiplayer(oData) {
         
         var pStartingPoint = new CVector2(_oStartingCardOffset.getX(), _oStartingCardOffset.getY());
         var pEndingPoint = new CVector2(
-            _oDealerCardOffset.getX() + ((CARD_WIDTH + 3) * _iCardDealedToDealer),
+            _oDealerCardOffset.getX() + (((CARD_WIDTH*CARD_SCALE) + 3) * _iCardDealedToDealer),
             _oDealerCardOffset.getY()
         );
         _iCardDealedToDealer++;

@@ -35,6 +35,8 @@ function CCard(iX,iY,oContainer){
 
         var oSpriteSheet = new createjs.SpriteSheet(oData);
         _oCardSprite = createSprite(oSpriteSheet,"back",CARD_WIDTH/2,CARD_HEIGHT/2,CARD_WIDTH, CARD_HEIGHT);
+        _oCardSprite.scaleX = CARD_SCALE;
+        _oCardSprite.scaleY = CARD_SCALE;
         _oCardSprite.x = iX;
         _oCardSprite.y = iY;
         _oCardSprite.stop();
@@ -94,7 +96,7 @@ function CCard(iX,iY,oContainer){
     this.setValue = function(){
         _oCardSprite.gotoAndStop(_szFotogram);
         var oParent = this;
-        createjs.Tween.get(_oCardSprite).to({scaleX:1}, 100).call(function(){oParent.cardShown()});
+        createjs.Tween.get(_oCardSprite).to({scaleX:CARD_SCALE}, 100).call(function(){oParent.cardShown()});
     };
 		
     this.showCard = function(){
@@ -110,7 +112,7 @@ function CCard(iX,iY,oContainer){
     this.setBack = function(){
         _oCardSprite.gotoAndStop("back");
         var oParent = this;
-        createjs.Tween.get(_oCardSprite).to({scaleX:1}, 100).call(function(){oParent.cardHidden()});
+        createjs.Tween.get(_oCardSprite).to({scaleX:CARD_SCALE}, 100).call(function(){oParent.cardHidden()});
     };
 		
     this.cardShown = function(){

@@ -487,7 +487,7 @@ function CGame(oData){
                 //THIS CARD IS FOR THE DEALER
                 if((_iCardIndexToDeal%_aCurActiveCardOffset.length) === 1){
                     _iCardDealedToDealer++;
-                    pEndingPoint=new CVector2(_oDealerCardOffset.getX()+(CARD_WIDTH+2)*(_iCardIndexToDeal > 1?1:0),_oDealerCardOffset.getY());
+                    pEndingPoint=new CVector2(_oDealerCardOffset.getX()+((CARD_WIDTH*CARD_SCALE)+2)*(_iCardIndexToDeal > 1?1:0),_oDealerCardOffset.getY());
 
                     var iCard;
                     if(_bDealerLoseInCurHand){
@@ -543,7 +543,7 @@ function CGame(oData){
                 
     this.hitDealer = function(){
         var pStartingPoint=new CVector2(_oStartingCardOffset.getX(),_oStartingCardOffset.getY());
-        var pEndingPoint=new CVector2(_oDealerCardOffset.getX()+((CARD_WIDTH+3)*_iCardDealedToDealer),_oDealerCardOffset.getY());
+        var pEndingPoint=new CVector2(_oDealerCardOffset.getX()+(((CARD_WIDTH*CARD_SCALE)+3)*_iCardDealedToDealer),_oDealerCardOffset.getY());
         _iCardDealedToDealer++;
 
         this.attachCardToDeal(pStartingPoint,pEndingPoint,true,_iCardDealedToDealer);

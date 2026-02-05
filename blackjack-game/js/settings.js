@@ -49,10 +49,12 @@ var ON_CARD_TO_REMOVE = "ON_CARD_TO_REMOVE";
 var NUM_FICHES = 6;
 var CARD_WIDTH = 44;
 var CARD_HEIGHT = 63;
+var CARD_SCALE = 1.8;
 var MIN_BET;
 var MAX_BET;
 var TOTAL_MONEY;
 var FICHE_WIDTH = 45;
+var FICHE_SCALE = 1.8;
 var WIN_OCCURRENCE;
 
 var TIME_FICHES_MOV = 600;
@@ -62,7 +64,7 @@ var TIME_SHOW_FINAL_CARDS = 6000;  // Increased from 4000 - time to show win/los
 var TIME_END_HAND = 3000;          // Increased from 1500 - time before clearing cards
 var BET_TIME = 10000;
 var COLOR_FICHE_PER_VALUE = ["#000","#000","#000","#fff","#000","#fff"];
-var SIZE_FONT_FICHE =[12,18,18,18,18,20];
+var SIZE_FONT_FICHE =[18,26,26,26,26,28];
 
 var AD_SHOW_COUNTER;
 var ENABLE_FULLSCREEN;

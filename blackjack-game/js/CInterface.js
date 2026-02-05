@@ -147,8 +147,8 @@ function CInterface(iMoney){
         _oSplitBut.addEventListener(ON_MOUSE_UP, this._onButSplitRelease, this);
 
         //SET FICHES BUTTON - scaled up for easier clicking
-        var iFicheScale = 1.25; // 25% bigger chips
-        var iFicheSpacing = 50; // Space between chips
+        var iFicheScale = FICHE_SCALE; // Scale from settings
+        var iFicheSpacing = 62; // Space between chips (scaled up)
         var iFicheStartX = 390; // Inside the bet frame
         var aPos = [
             {x:iFicheStartX,y:666},{x:iFicheStartX+iFicheSpacing,y:666},{x:iFicheStartX+iFicheSpacing*2,y:666},

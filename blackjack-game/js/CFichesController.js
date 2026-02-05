@@ -86,13 +86,13 @@ function CFichesController(pPos,pInsurance){
                     oParentContainer = _oInsuranceFiches;
                 }
                 var oNewFiche = new CFiche(iXOffset,iYOffset,aFiches[i].index,aFiches[i].value,false,oParentContainer);
-                oNewFiche.setScale(0.7);
+                oNewFiche.setScale(0.7 * FICHE_SCALE);
 
                 iYOffset -= 5;
                 iCont++;
                 if(iCont>9 ){
                     iCont=0;
-                    iXOffset+=FICHE_WIDTH;
+                    iXOffset+=FICHE_WIDTH * FICHE_SCALE;
                     iYOffset=iYPos;	
                 }
 

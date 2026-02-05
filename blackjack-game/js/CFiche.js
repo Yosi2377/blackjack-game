@@ -36,7 +36,7 @@ function CFiche(iX,iY,iIndex,szValue,bClickable,oParentContainer){
         var iSize = SIZE_FONT_FICHE[iIndex] || 12;
         var sColor = COLOR_FICHE_PER_VALUE[iIndex] || "#ffffff";
         _oTextValue = new CTLText(_oContainer, 
-                    9, 7, 22, 18, 
+                    4, 4, 36, 32, 
                     iSize, "center", sColor, FONT_GAME_1, 1,
                     0, 0,
                     szValue,

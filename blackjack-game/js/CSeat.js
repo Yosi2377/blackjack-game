@@ -497,15 +497,15 @@ function CSeat(){
     this.getAttachCardOffset = function(){
         if(_iCurHand === 0){
 
-            _vAttachPos.set(_oGroup.x+_oCardOffset.getX()+((CARD_WIDTH/2)*_aHands[_iCurHand].getNumCards()),
-                                                                _oGroup.y+_oCardOffset.getY()-(CARD_HEIGHT/2)*_aHands[_iCurHand].getNumCards());
+            _vAttachPos.set(_oGroup.x+_oCardOffset.getX()+(((CARD_WIDTH*CARD_SCALE)/2)*_aHands[_iCurHand].getNumCards()),
+                                                                _oGroup.y+_oCardOffset.getY()-((CARD_HEIGHT*CARD_SCALE)/2)*_aHands[_iCurHand].getNumCards());
                 
         }else{
-                var iXPos=_oGroup.x+_oSplitOffset.getX()+((CARD_WIDTH/2)*_aHands[_iCurHand].getNumCards());	
+                var iXPos=_oGroup.x+_oSplitOffset.getX()+(((CARD_WIDTH*CARD_SCALE)/2)*_aHands[_iCurHand].getNumCards());	
                 
 
 
-                var iYPos=_oGroup.y+_oSplitOffset.getY()-(CARD_HEIGHT/2)*_aHands[_iCurHand].getNumCards();
+                var iYPos=_oGroup.y+_oSplitOffset.getY()-((CARD_HEIGHT*CARD_SCALE)/2)*_aHands[_iCurHand].getNumCards();
 
                 _vAttachPos.set(iXPos,iYPos);
         }

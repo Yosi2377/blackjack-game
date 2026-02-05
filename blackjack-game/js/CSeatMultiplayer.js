@@ -686,12 +686,12 @@ function CSeatMultiplayer(iX, iY, iSeatIndex) {
         
         if (_iCurHand === 0) {
             _vAttachPos.set(
-                baseX + _oCardOffset.getX() + ((CARD_WIDTH / 2) * _aHands[_iCurHand].getNumCards()),
-                baseY + _oCardOffset.getY() - (CARD_HEIGHT / 2) * _aHands[_iCurHand].getNumCards()
+                baseX + _oCardOffset.getX() + (((CARD_WIDTH*CARD_SCALE) / 2) * _aHands[_iCurHand].getNumCards()),
+                baseY + _oCardOffset.getY() - ((CARD_HEIGHT*CARD_SCALE) / 2) * _aHands[_iCurHand].getNumCards()
             );
         } else {
-            var iXPos = baseX + _oSplitOffset.getX() + ((CARD_WIDTH / 2) * _aHands[_iCurHand].getNumCards());
-            var iYPos = baseY + _oSplitOffset.getY() - (CARD_HEIGHT / 2) * _aHands[_iCurHand].getNumCards();
+            var iXPos = baseX + _oSplitOffset.getX() + (((CARD_WIDTH*CARD_SCALE) / 2) * _aHands[_iCurHand].getNumCards());
+            var iYPos = baseY + _oSplitOffset.getY() - ((CARD_HEIGHT*CARD_SCALE) / 2) * _aHands[_iCurHand].getNumCards();
             _vAttachPos.set(iXPos, iYPos);
         }
 
